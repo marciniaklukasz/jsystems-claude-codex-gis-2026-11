@@ -25,3 +25,6 @@ __pycache__/
 
 # map-qa run outputs (ADR-000 §3)
 reports/map-qa/runs/
+
+# pytest temp dir used by sandboxed Codex workers
+app/.pytest-tmp/

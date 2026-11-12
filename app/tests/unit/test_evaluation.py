@@ -64,3 +64,16 @@ def test_pairs_count_sample_pairs_not_all_labels_and_only_read_questions():  # A
     out = ev_mod.evaluate(readings, labels)
     assert list(out) == ["surface"]
     assert out["surface"]["pairs"] == 1
+
+
+def test_comparison_pairs_only_those_sent_to_comparison_model():  # ADR-002 §4.10: osobno dla modelu porównawczego
+    import pandas as pd
+    from map_qa import evaluation as ev_mod
+
+    labels = pd.DataFrame([{"photo_id": f"p{i}", "question_id": "surface", "label": "paved", "status": "certain"} for i in range(4)])
+    readings = pd.DataFrame([{"photo_id": f"p{i}", "question_id": "surface", "split": "test", "decision_answer": "paved",
+                              "decision_confident": True, "answer": "paved", "status": "certain"} for i in range(4)])
+    comparison = pd.DataFrame([{"photo_id": "p0", "question_id": "surface", "split": "test", "answer": "paved", "confident": True}])
+    rows = ev_mod.evaluate(readings, labels, comparison)["surface"]["rows"]
+    cmp_all = next(r for r in rows if r["who"] == "comparison" and r["split"] == "all")
+    assert (cmp_all["pairs"], cmp_all["certain"], cmp_all["coverage"]) == (1, 1, 1.0)

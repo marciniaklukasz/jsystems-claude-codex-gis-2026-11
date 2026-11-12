@@ -373,8 +373,10 @@ def run_cascade(conn, *, run_id, manifest, images, links, limits, th, transport)
         usage = store.budget_usage(conn, run_id)
         primary_usage = usage.get(v["decision_model"], {})
         comparison_usage = usage.get(v["comparison_model"], {})
-        if (sent and not primary_usage.get("disabled", False)
-                and comparison_usage.get("sent", 0) < limits.comparison):
+        replay = (hit and not sent and limits.comparison > 0 and
+                  store.cache_get(conn, pair["image_sha256"], v["comparison_model"], pair["question_id"], v["questions_version"]) is not None)
+        if replay or (sent and not primary_usage.get("disabled", False)
+                      and comparison_usage.get("sent", 0) < limits.comparison):
             other, _, other_sent, other_cost = read(pair, v["comparison_model"], "decisions", limits.comparison)
             row["cost_usd"] += other_cost
             if other is not None or other_sent:

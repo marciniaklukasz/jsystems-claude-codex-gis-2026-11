@@ -184,3 +184,11 @@ def test_bad_fallback_content_does_not_disable_model(conn):  # ADR-002 §4.4 vs 
     assert by_photo(res).loc["p0", "status"] == "model_unavailable"
     assert by_photo(res).loc["p1", "final_stage"] == "fallback"
     assert store.budget_usage(conn, "R1")[LUNA]["disabled"] is False
+
+
+def test_rerun_replays_comparison_from_cache_without_request(conn):  # AC-22 + ADR-002 §4.10
+    t = FakeTransport([decision_body("paved", SURE), decision_body("paved", SURE, path=DECISIONS_LUNA)])
+    run(conn, manifest(1), t, Limits(decision=1, comparison=1, max_cost_usd=1))
+    t2 = NoNetwork()
+    res = run(conn, manifest(1), t2, Limits(decision=1, comparison=1, max_cost_usd=1), run_id="R2")
+    assert t2.calls == [] and len(res.comparison) == 1

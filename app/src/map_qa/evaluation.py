@@ -83,10 +83,12 @@ def evaluate(readings: pd.DataFrame, labels: pd.DataFrame, comparison: pd.DataFr
             merged["status_reading"] = merged["status"]
         for split in split_values:
             subset = merged if split == "all" else merged[merged.split == split]
-            pair_count = len(subset)
             for who, answer_col, confident in sources:
+                # model porównawczy: tylko pary, które faktycznie dostał (AC-19, ADR-002 §4.10)
+                part = subset[subset["confident"].notna()] if who == "comparison" else subset
+                pair_count = len(part)
                 certain = correct = 0
-                for record in subset.to_dict("records"):
+                for record in part.to_dict("records"):
                     if confident(record):
                         certain += 1
                         answer = record.get(answer_col, "")

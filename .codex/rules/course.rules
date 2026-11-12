@@ -21,6 +21,14 @@ prefix_rule(pattern=[["git", "git.exe"], "worktree", "add"], decision="prompt", 
 # With approvals_reviewer = "auto_review", eligible prompts go to the judge.
 prefix_rule(pattern=[["curl", "curl.exe", "wget", "wget.exe"]], decision="prompt", justification="Review the destination and any upload, download or execution side effects.", match=["curl https://example.com", "wget https://example.com"], not_match=["rg ERROR logs"])
 
+# Databricks CLI for the map-qa exercise (ADR-004): reads run in the sandbox,
+# every SQL POST and identity lookup is reviewed, credential/config output and writes are blocked.
+prefix_rule(pattern=[["databricks", "databricks.exe"], "api", "post"], decision="prompt", justification="Review the SQL request file before sending; only SELECT is allowed (ADR-004 D-402).", match=["databricks api post /api/2.0/sql/statements --json @request.json"], not_match=["databricks api get /api/2.0/sql/statements/abc"])
+prefix_rule(pattern=[["databricks", "databricks.exe"], "current-user"], decision="prompt", justification="The response contains identity data; the human runs it (ADR-004 D-403).", match=["databricks current-user me"], not_match=["databricks version"])
+prefix_rule(pattern=[["databricks", "databricks.exe"], "api", ["put", "patch", "delete"]], decision="forbidden", justification="The exercise is read-only; do not change workspace resources.", match=["databricks api delete /api/2.0/sql/statements/abc"], not_match=["databricks api get /api/2.0/sql/statements/abc"])
+prefix_rule(pattern=[["databricks", "databricks.exe"], "auth", ["env", "token", "describe"]], decision="forbidden", justification="These commands can print credentials or auth configuration.", match=["databricks auth env", "databricks auth token"], not_match=["databricks version"])
+prefix_rule(pattern=[["databricks", "databricks.exe"], "configure"], decision="forbidden", justification="The human configures profiles outside the agent session (ADR-004 D-403).", match=["databricks configure --profile map-qa"], not_match=["databricks version"])
+
 # DENY: retained course restrictions (plus modern command aliases).
 prefix_rule(pattern=[["env", "printenv"]], decision="forbidden", justification="Environment dumps can disclose credentials; inspect only approved non-secret names.", match=["env", "printenv PATH"], not_match=["true"])
 prefix_rule(pattern=[["rm", "rmdir"]], decision="forbidden", justification="The root course policy disallows these deletion commands; request a scoped maintenance task.", match=["rm example.txt", "rmdir example"], not_match=["true"])

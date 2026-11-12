@@ -61,6 +61,10 @@
       "Write",
       "MultiEdit",
       "Read(.env.example)",
+      "Bash(databricks version)",
+      "Bash(databricks --version)",
+      "Bash(databricks --help)",
+      "Bash(databricks api get *)",
       "WebSearch",
       "WebFetch(domain:blog.jetbrains.com)",
       "WebFetch(domain:www.jetbrains.com)"
@@ -69,11 +73,21 @@
       "Bash(git worktree add *)",
       "Bash(git -C * worktree add *)",
       "EnterWorktree",
-      "Agent(isolation:worktree)"
+      "Agent(isolation:worktree)",
+      "Bash(databricks api post *)",
+      "Bash(databricks current-user *)",
+      "Bash(uv run * query_databricks.py*)"
     ],
     "deny": [
       "Bash(env:*)",
       "Bash(printenv:*)",
+      "Bash(databricks auth env*)",
+      "Bash(databricks auth token*)",
+      "Bash(databricks auth describe*)",
+      "Bash(databricks configure*)",
+      "Bash(databricks api put *)",
+      "Bash(databricks api patch *)",
+      "Bash(databricks api delete *)",
       "Bash(rm:*)",
       "Bash(rmdir:*)",
       "Bash(git push --force:*)",

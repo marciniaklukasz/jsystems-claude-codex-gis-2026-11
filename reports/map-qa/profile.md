@@ -152,7 +152,7 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 ## Ograniczenia
 - Databricks: porównane tylko liczności; poprawność geometrii i dystanse po stronie Databricks (zapytania z `DATABRICKS.md` § „Kontrole przestrzenne”) nieuruchomione.
 - Mapillary, Panoramax i Overture przez sieć — nieodpytane.
-- Hash plików CSV/GeoJSON nadal niezgodny w kopii roboczej (`git ls-files --eol`: `i/lf w/crlf`, brak reguły w `.gitattributes`) — stan z 2026-11-03 bez zmian.
+- Hash plików CSV/GeoJSON: niezgodny do 2026-11-12 (CRLF w kopii roboczej); naprawione w kroku 0c regułą `-text` w `.gitattributes` — 8/8 zgodnych.
 - Profil nie otwierał ręcznie zdjęć; ocena „właściwa jezdnia” dla przykładów niepewnych pozostaje do Manual QA w kroku 3.
 - Liczności dotyczą snapshotu OSM 2026-11-01 i Overture 2026-10-21.0.
 
@@ -160,7 +160,7 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 1. **Hash a końce linii (blokuje krok 1).** Do wyboru:
    - (a) reguła w `.gitattributes`: pliki danych `course-materials/exercise-data/**` bez konwersji końców linii (`-text`) i ponowny checkout tych plików — hash zgodny z `sources.json`;
    - (b) `ingest` liczy hash plików tekstowych po zamianie CRLF → LF — słabsza kontrola, bez zmiany repozytorium.
-   Rekomendacja: (a), bo to błąd konfiguracji repozytorium, nie danych. **Wybrano (a)** 2026-11-12 (plan krok 0c); stan 2026-11-12: reguła jeszcze niedodana.
+   Rekomendacja: (a), bo to błąd konfiguracji repozytorium, nie danych. **Wybrano (a)** 2026-11-12 (plan krok 0c); wykonane 2026-11-12: po regule i ponownym checkoucie 8/8 plików zgodnych z `sources.json`.
 2. ADR-001 §4.1: wartości `PL:*` występują w `maxspeed:type`, nie w `maxspeed`; reguła „`implicit` → `not_comparable`” w praktyce nie zadziała na tych danych. Bez zmiany decyzji — `maxspeed:type` zostaje informacyjny.
 3. ADR-001 §4.3: dopisać do mapowania Overture `paving_stones` → paved, `gravel`/`dirt` → unpaved, `unknown` → `not_comparable`; literówki OSM pozostają `not_comparable`.
 4. ADR-001 §3.3: parser `record_id` toleruje brak `@wersja`.

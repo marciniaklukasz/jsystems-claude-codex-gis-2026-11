@@ -67,3 +67,12 @@ def test_build_sample_real_data_stage1_and_manifest_written(tmp_path, data_dir):
     back = pd.read_csv(path, dtype=str)
     assert list(back["photo_id"]) == list(m["photo_id"])
     assert set(sample.images) == set(m["image_sha256"])
+
+
+def test_build_sample_stage2_includes_stage2_questions(data_dir):  # T7.3, ADR-002 §4.1, §4.7
+    from map_qa import evaluation
+
+    sample = vision.build_sample(2, 25, TH, data_dir, evaluation.load_labels(data_dir))
+    qs = sample.manifest["question_id"].value_counts().to_dict()
+    assert set(qs) == {"speed_limit_value", "surface", "street_lighting_visible", "junction_visible"}
+    assert len(sample.manifest) == 25 and max(qs.values()) - min(qs.values()) <= 1

@@ -28,3 +28,7 @@ reports/map-qa/runs/
 
 # pytest temp dir used by sandboxed Codex workers
 app/.pytest-tmp/
+
+# temp dirs created by sandboxed Codex workers
+app/.pytest-tmp*/
+app/.debug-run/

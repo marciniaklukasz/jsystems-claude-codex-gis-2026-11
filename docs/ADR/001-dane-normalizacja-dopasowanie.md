@@ -3,6 +3,7 @@
 **Data:** 2026-11-03
 **Status:** Accepted
 **Relates to:** [000-main-architecture.md](000-main-architecture.md), [PRD](../PRD.md) AC-01–AC-16
+**Poprawki po audycie spójności 2026-11-12 (P1, P2, P6):** §3.1, §3.4, §3.5, §4.1, §4.3, §7, §8.
 
 ---
 
@@ -32,7 +33,8 @@ Struktura reguł Overture opisana w §4.2 jest zgodna z dokumentacją schematu; 
 
 ### 3.1. `ingest`
 - Dla każdego pliku z `sources.json` → `files` liczy rozmiar i SHA-256 przed wczytaniem. Niezgodność lub brak → wyjątek `InputIntegrityError(nazwa_pliku)` → CLI kod 1.
-- Ten sam test powtarza się po zakończeniu runu (AC-01); różnica → kod 3 i komunikat.
+- Ten sam test powtarza się po zakończeniu runu, przed zmianą nazw plików raportu (AC-01); różnica → kod 1, komunikat z nazwą pliku i brak raportu (ADR-000 §6; poprawka 2026-11-12, wcześniej kod 3).
+- `traffic_signs.geojson`: tylko kontrola integralności i liczność w raporcie (1 730); nie wpływa na pary ani kategorie (decyzja 2026-11-12, P6).
 - OSM: `read_parquet`, CRS EPSG:4326. Overture: `read_parquet`, CRS OGC:CRS84. CRS ustawiany jawnie z `sources.json`, nie zgadywany; oba są w kolejności długość, szerokość.
 - `tags` parsowane z JSON do słownika; surowy tekst JSON zachowany bez zmian w kolumnie `tags_raw`.
 - `photos.csv`: `heading` pusty → brak (NaN), `0.0` → północ (AC-08). `is_panorama` przenoszone bez interpretacji.
@@ -50,6 +52,8 @@ Struktura reguł Overture opisana w §4.2 jest zgodna z dokumentacją schematu; 
 ### 3.4. `matching` — połączenie zdjęcie–droga
 Punkt wyjścia: dostarczony `photo_road_links.csv` (dla `signs/` — `signs/nearest_osm.csv`). Nie liczymy połączeń od zera; walidujemy je i oznaczamy niepewność.
 
+`signs/nearest_osm.csv` ma inny schemat (uzupełnienie 2026-11-12): `heading_diff_deg` odpowiada `bearing_diff`, `match_flags` odpowiada `candidate_flags`, brak `match_method`; kierunek aparatu to `compass_angle` w `signs/signs.csv`. Wiersze z `source = osm_api` (24, drogi spoza snapshotu, poza Krakowem) albo z flagą `outside_standard_25m` nie tworzą pary z mapą: zdjęcie służy tylko ewaluacji odczytu (ADR-002 §4.10). Pozostałe wiersze `signs/` przechodzą kroki 1–7 jak `photo_road_links.csv`. Zdjęcia `signs/` nie wchodzą do liczników AC-09 (te dotyczą 561 zdjęć z `photos.csv`).
+
 1. Punkt aparatu → EPSG:2180; dystans do geometrii wskazanej drogi OSM w EPSG:2180. Różnica względem `distance_m` > 1,0 m → przyczyna `link_distance_mismatch`.
 2. Lokalny kierunek drogi (§3.2) i różnica kątowa z `heading` jako minimum z obu kierunków geometrii, zakres 0–90°, z zawijaniem 360° (359° i 1° → 2°). Różnica względem `bearing_diff` > 1,0° → `link_bearing_mismatch`.
 3. Połączenie jest niepewne (`is_uncertain = true`, przyczyna `ambiguous_link`), gdy zachodzi co najmniej jeden warunek:
@@ -62,16 +66,19 @@ Punkt wyjścia: dostarczony `photo_road_links.csv` (dla `signs/` — `signs/near
 5. `camera_against_way_direction` i `boundary_crossing` są tylko informacją w raporcie — kierunek aparatu nie jest kierunkiem jazdy; nie oznaczają niepewności same w sobie.
 6. Remisy: zachowujemy regułę wejściową (`distance_m + bearing_diff/9`, brak kierunku = 5 m; remis → dystans, potem `osm_id`). Jeśli implementacja liczy kandydata ponownie przez `sjoin_nearest` (tylko w teście walidacyjnym), deduplikacja tą samą regułą.
 7. Drogi z `access` ∈ {`private`, `no`} lub `motor_vehicle` ∈ {`private`, `no`} → przyczyna `ambiguous_link` dla zdjęć z nimi połączonych (zdjęcie może przedstawiać sąsiednią drogę publiczną). Profil 0b: ok. 15 000 takich dróg (głównie `service`), 14 zdjęć z flagą `service_way`. Liczbę zdjęć połączonych z drogą o ograniczonym dostępie mierzy krok 3 i porównuje z wyzwalaczem D-103 (> 50%).
+8. Liczniki AC-09 to trzy rozłączne grupy: pewne połączenie, niepewne połączenie (`ambiguous_link`), bez kandydata (krok 4); suma = 561.
 
 ### 3.5. `compare` — kategorie
-Dla każdej pary zbieramy dowody: (a) OSM vs Overture, (b) OSM vs odczyt zdjęcia (tylko połączenie pewne i odczyt pewny). Reguła łączenia:
-1. Jest co najmniej jedna przyczyna z listy `missing`, `not_comparable`, `ambiguous_link`, `abstain`, `model_unavailable` dotycząca porównania, które byłoby jedynym dowodem → `do sprawdzenia` z wszystkimi przyczynami (AC-10, AC-10a).
-2. Inaczej: dowolny dowód z różnymi wartościami → `rozbieżne` (AC-11).
-3. Inaczej → `zgodne`.
+Dla każdej pary zbieramy dowody: (a) OSM vs Overture, (b) OSM vs odczyt zdjęcia (tylko połączenie pewne i odczyt pewny). Przyczyny `ambiguous_link`, `abstain` i `model_unavailable` dotyczą wyłącznie dowodu (b); nie unieważniają dowodu (a) (decyzja 2026-11-12, P2). Reguła łączenia (kolejność obowiązuje):
+1. Brak wartości OSM przy drodze `tertiary`+ → `do sprawdzenia` z `missing` (AC-13).
+2. Jest co najmniej jedna przyczyna z listy `not_comparable`, `ambiguous_link`, `abstain`, `model_unavailable` dotycząca porównania, które byłoby jedynym dowodem pary → `do sprawdzenia` z wszystkimi przyczynami (AC-10, AC-10a).
+3. Inaczej: dowolny porównywalny dowód z różnymi wartościami → `rozbieżne` (AC-11); OSM≠Overture przy obu wartościach porównywalnych daje `rozbieżne` także wtedy, gdy dowód ze zdjęcia jest niepewny lub go brak.
+4. Inaczej: co najmniej jeden porównywalny dowód i wszystkie równe → `zgodne`.
+5. Brak jakiegokolwiek porównywalnego dowodu (i brak przyczyny z pkt 1–2) → wykluczenie z licznikiem „brak porównywalnego dowodu” (AC-16), nie `zgodne` i nie kolejka ręczna (decyzja 2026-11-12, P1).
 
 Zakres par:
-- Etap 1, prędkość i nawierzchnia: wszystkie drogi OSM. Brak wartości OSM przy `highway` ∈ {motorway, trunk, primary, secondary, tertiary i `*_link`} → `missing` (AC-13). Brak wartości poniżej `tertiary` i brak odpowiednika Overture → wykluczenie z licznikiem „brak wartości poniżej tertiary”.
-- Etap 2, oświetlenie i skrzyżowanie: tylko drogi połączone ze zdjęciem, bo Overture nie ma `lit`, a skrzyżowanie oceniamy względem kadru.
+- Etap 1, prędkość i nawierzchnia: wszystkie drogi OSM. Brak wartości OSM przy `highway` ∈ {motorway, trunk, primary, secondary, tertiary i `*_link`} → `missing` (AC-13). Drogi poniżej `tertiary` tworzą parę tylko przy porównywalnym dowodzie z Overture lub zdjęcia; brak wartości OSM poniżej `tertiary` → wykluczenie z licznikiem „brak wartości poniżej tertiary” (P1).
+- Etap 2, oświetlenie i skrzyżowanie: tylko drogi połączone ze zdjęciem, bo Overture nie ma `lit`, a skrzyżowanie oceniamy względem kadru. Run `--stage 2` zawiera też wszystkie pary etapu 1 (ADR-000 §6, P4).
 - Każde wykluczenie ma powód i licznik (AC-16).
 
 ---
@@ -92,7 +99,7 @@ Wejście: wszystkie klucze tagów zaczynające się od `maxspeed`. Surowe pary k
 | pusty / brak klucza | `missing` | — | → `missing` lub wykluczenie (§3.5) |
 
 Reguły kierunkowe i warunkowe:
-- `maxspeed:forward` / `maxspeed:backward` — względem kolejności węzłów OSM; `oneway=-1` odwraca kierunek jazdy względem węzłów. Porównanie z Overture i zdjęciem tylko wtedy, gdy wartości w obu kierunkach są równe; inaczej `not_comparable` (kierunek aparatu nie wyznacza kierunku jazdy).
+- `maxspeed:forward` / `maxspeed:backward` — względem kolejności węzłów OSM; `oneway=-1` odwraca kierunek jazdy względem węzłów. Porównanie z Overture i zdjęciem tylko wtedy, gdy wartości w obu kierunkach są równe; inaczej `not_comparable` (kierunek aparatu nie wyznacza kierunku jazdy). Tylko jeden z tagów kierunkowych, bez `maxspeed` dla drugiego kierunku → `not_comparable` (uzupełnienie 2026-11-12).
 - `maxspeed:conditional` obecny → `not_comparable` dla całej pary, z surową regułą w raporcie (AC-12).
 - `maxspeed:type` i `maxspeed:hgv/bus/trailer` — zachowane w `maxspeed_raw`, nie wpływają na porównanie.
 
@@ -102,7 +109,7 @@ Każda reguła zachowana w całości w `speed_limits_raw` (JSON z wszystkimi pol
 Porównywalna jest para tylko wtedy, gdy segment ma dokładnie jedną regułę z `max_speed` w `km/h`, bez `when`, z `between` pustym (cały segment) i bez zmiennego ograniczenia. Każdy inny przypadek → `not_comparable`. Nie wybieramy pierwszej reguły z listy.
 
 ### 4.3. Nawierzchnia
-- OSM `surface` → `paved` dla {asphalt, concrete, concrete:plates, concrete:lanes, paved, paving_stones, sett, cobblestone, unhewn_cobblestone, chipseal, metal, wood}; `unpaved` dla {unpaved, gravel, fine_gravel, compacted, dirt, earth, ground, grass, mud, sand, pebblestone, rock, woodchips, grass_paver}. Inne wartości → `not_comparable`. Lista w `thresholds.toml`, wersjonowana.
+- OSM `surface` → `paved` dla {asphalt, concrete, concrete:plates, concrete:lanes, paved, paving_stones, sett, cobblestone, unhewn_cobblestone, chipseal, metal, wood}; `unpaved` dla {unpaved, gravel, fine_gravel, compacted, dirt, earth, ground, grass, mud, sand, pebblestone, rock, woodchips, grass_paver}. Inne wartości → `not_comparable`. Lista w `thresholds.toml`, wersjonowana. Dopasowanie dokładne po usunięciu spacji z brzegów, z rozróżnianiem wielkości liter: `paving_Stones`, `contrete:plates` i podobne → `not_comparable` (profil, decyzja 3; uzupełnienie 2026-11-12).
 - Overture `road_surface`: zachowane w `road_surface_raw`; porównywalna jedna reguła bez `between`. Wartości w snapshocie (profil 0b): `paved`, `paving_stones`, `metal` → paved; `unpaved`, `gravel`, `dirt` → unpaved; `unknown` → `not_comparable`.
 - Odczyt zdjęcia: `paved` / `unpaved` / `unknown` (ADR-002).
 
@@ -186,11 +193,11 @@ sequenceDiagram
 flowchart TD
     A[Para odcinek x atrybut] --> B{Wartość OSM?}
     B -- brak, tertiary+ --> MS[missing]
-    B -- brak, niżej, bez Overture --> EX[wykluczenie z licznikiem]
+    B -- brak, niżej --> EX[wykluczenie z licznikiem]
     B -- jest --> C{Jednoznaczna i porównywalna?}
     C -- nie --> NC[not_comparable]
     C -- tak --> D{Dowody: Overture, zdjęcie pewne}
-    D -- brak dowodu --> NC
+    D -- brak porównywalnego dowodu --> EX
     D -- różne --> R[rozbieżne]
     D -- równe --> Z[zgodne]
     MS --> Q[do sprawdzenia + przyczyny]
@@ -201,7 +208,7 @@ flowchart TD
 
 ## 8. Strategia testów
 
-Testy pisane przed kodem; dane testowe to kopie kilku prawdziwych wierszy (`signs/signs.csv` + `signs/nearest_osm.csv` po `photo_id`, `photo_road_links.csv`, `osm_roads_sample.geojson`) w `app/tests/fixtures/rows/`, z notą o źródle i dacie.
+Testy pisane przed kodem; dane testowe to kopie kilku prawdziwych wierszy (`signs/signs.csv` + `signs/nearest_osm.csv` po `photo_id`, `photo_road_links.csv`, `osm_roads_sample.geojson`) w `app/tests/fixtures/rows/`, z notą o źródle i dacie. Formaty nieobecne w snapshocie (np. `30 mph`, `50;70`, `PL:urban` w `maxspeed`, `none`) testy jednostkowe czystych funkcji `normalize` podają jako jawnie syntetyczne wartości parametryzowane (uzupełnienie 2026-11-12).
 
 | Scenariusz | Typ | Wejście | Oczekiwany wynik | Przypadki brzegowe |
 |---|---|---|---|---|
@@ -213,10 +220,10 @@ Testy pisane przed kodem; dane testowe to kopie kilku prawdziwych wierszy (`sign
 | Droga serwisowa / dostęp | Unit | `service_way`, `access=private` | `ambiguous_link` | `motor_vehicle=no` |
 | `maxspeed` formaty | Unit | `50`, `50 km/h`, `30 mph`, `50;70`, `PL:urban`, `none`, brak | wg tabeli §4.1 | spacje, wielkie litery |
 | Kierunkowe i warunkowe | Unit | `maxspeed:forward=50`, `:backward=70`, `oneway=-1`; `maxspeed:conditional` | `not_comparable`, surowe wartości zachowane | równe forward/backward → porównywalne |
-| Reguły Overture | Unit | 1 reguła bez `when`; 2 reguły; reguła z `when`; z `between` | tylko pierwsza porównywalna; wszystkie reguły w `speed_limits_raw` | jednostka mph |
-| Kategoria | Unit | OSM 50, Overture 50 / 70 / brak; zdjęcie przy połączeniu niepewnym | `zgodne` / `rozbieżne` / `do sprawdzenia` + `ambiguous_link` | brak odpowiednika Overture |
+| Reguły Overture | Unit | 1 reguła bez `when`; 2 reguły; reguła z `when`; z `between` | porównywalny tylko przypadek 1 reguły bez `when`/`between`; pozostałe `not_comparable`; wszystkie reguły w `speed_limits_raw` | jednostka mph |
+| Kategoria | Unit | OSM 50, Overture 50 / 70 / brak; zdjęcie przy połączeniu niepewnym jako jedyny dowód | `zgodne` / `rozbieżne` / `do sprawdzenia` + `ambiguous_link` | OSM 50, Overture 70 i niepewne zdjęcie → `rozbieżne`; brak porównywalnego dowodu → wykluczenie z licznikiem |
 | Most / tunel | Unit | `bridge=yes` przy skrzyżowaniu | `not_comparable` | `layer=-1` |
-| Liczniki wykluczeń | Integration | pełne pliki map-qa | suma (z kandydatem + bez + niepewne) = 561 (AC-09) | 3 zdjęcia bez kandydata |
+| Liczniki wykluczeń | Integration | pełne pliki map-qa | suma rozłącznych grup (pewne + niepewne + bez kandydata) = 561 (AC-09) | 3 zdjęcia bez kandydata |
 
 ### Techniczne kryteria akceptacji
 - **TAC-001-01:** Dla każdego wiersza wyniku `osm_raw` i `overture_raw` są identyczne (porównanie tekstowe JSON) z wartościami w plikach wejściowych.

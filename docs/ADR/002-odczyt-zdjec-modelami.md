@@ -47,7 +47,7 @@ Stan runu: tylko SQLite (`budget_ledger`, `model_cache`) i pliki runu. Brak stan
 ## 4. Kontrakty i struktury danych
 
 ### 4.1. Pytania (`questions_version = 1`, w `thresholds.toml`)
-Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Teksty po angielsku, neutralne, bez nazw miejsc, identyfikatorów i danych mapy.
+Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Wersja 1 obejmuje wszystkie cztery pytania; etap 2 używa tej samej `questions_version = 1`, bez podnoszenia wersji (decyzja 2026-11-12, P5). Teksty po angielsku, neutralne, bez nazw miejsc, identyfikatorów i danych mapy.
 
 | `question_id` | Etap | Opcje (`criteria`) | Znaczenie |
 |---|---|---|---|
@@ -95,7 +95,7 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Jednostka: para (zdjęcie, pytanie) z etykietą `certain` dla tego pytania: prędkość z `signs/labels.csv` (`sign_value`), pozostałe z `reference_labels.csv`.
 - Podział walidacja/test po `sequence`: SHA-256 identyfikatora sekwencji, parzysty pierwszy bajt → walidacja, nieparzysty → test.
 - Kolejność: pary posortowane po SHA-256 (`photo_id` + `question_id`); pytania etapu naprzemiennie, aż do limitu żądań modelu głównego. Etap 1 przy limicie 25: 13 par prędkości + 12 nawierzchni.
-- Model porównawczy: pierwsze `comparison-limit` pary z manifestu.
+- Model porównawczy: pierwsze `comparison-limit` pary z manifestu, które zostały już wysłane do modelu głównego (PRD AC-19); po wyłączeniu modelu głównego (AC-20) model porównawczy nie dostaje nowych par (uzupełnienie 2026-11-12).
 - Kolumny: `photo_id`, `question_id`, `split`, `sequence`, `image_sha256`, `order`. Plik zapisany i zsynchronizowany na dysk przed pierwszym żądaniem; nie zmienia się w trakcie runu.
 - Etykiety referencyjne są używane tylko przez `SampleBuilder` (wybór) i `Evaluator`; nie trafiają do żadnego komponentu, który buduje żądanie.
 

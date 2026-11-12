@@ -59,7 +59,7 @@ Prototyp (PoC) narzędzia dla analityka map QA i edytora OSM. Narzędzie zestawi
 
 ### 4.4. Ścieżki alternatywne
 - **Niepewny odczyt — eskalacja dwustopniowa:** gdy model decyzyjny jest niepewny, nie odpowiada (błąd API) albo dotyczy zdjęcia z niepewnym połączeniem, system raz przekazuje to samo pytanie i obraz do zwykłego modelu językowego ze średnim poziomem rozumowania. Jeśli i on nie da pewnej odpowiedzi, przypadek trafia do kolejki ręcznej analityka z przyczyną.
-- **Brak budżetu:** system nie wywołuje żadnego modelu; pary bez odczytu trafiają do kolejki ręcznej z przyczyną `model_unavailable`.
+- **Brak budżetu:** system nie wywołuje żadnego modelu; pary, w których odczyt zdjęcia byłby jedynym dowodem, trafiają do kolejki ręcznej z przyczyną `model_unavailable`. Brak odczytu nie zmienia kategorii wynikającej z porównania OSM–Overture (ADR-001 §3.5; decyzja 2026-11-12).
 - **Databricks lub API niedostępne:** system zapisuje to ograniczenie w raporcie i kontynuuje na lokalnych plikach.
 - **Niezgodny hash pliku wejściowego:** system przerywa kontrolę z komunikatem wskazującym plik; nie nadpisuje wejść.
 - **Brak kandydata drogi dla zdjęcia:** zdjęcie jest liczone jako wykluczone z powodem „brak kandydata w promieniu”; to stan danych, nie błąd mapy.
@@ -87,13 +87,13 @@ Prototyp (PoC) narzędzia dla analityka map QA i edytora OSM. Narzędzie zestawi
 - **AC-02:** Przy niezgodnym hashu pliku wejściowego kontrola kończy się kodem błędu, a komunikat zawiera nazwę pliku; raport nie powstaje.
 - **AC-03:** Raport podaje liczność wczytanych dróg OSM, segmentów Overture i zdjęć; dla dostarczonego snapshotu są to 99 768, 85 405 i 561.
 - **AC-04:** Wszystkie odległości w raporcie są w metrach, liczone po przeliczeniu obu warstw do EPSG:2180; raport podaje użyty układ.
-- **AC-05:** Gdy Databricks lub API są niedostępne, raport zawiera sekcję „Ograniczenia” z nazwą źródła i przyczyną, a kontrola kończy się sukcesem na plikach.
+- **AC-05:** Gdy Databricks lub API są niedostępne, raport zawiera sekcję „Ograniczenia” z nazwą źródła i przyczyną, a kontrola kończy się sukcesem na plikach. Kontrola nie odpytuje Databricks (ADR-000 D-02), więc sekcja zawsze zawiera wpis o Databricks i stan dostępu do modelu.
 
 ### Połączenia zdjęcie–droga
 - **AC-06:** Połączenie jest oznaczone jako niepewne, gdy spełniony jest co najmniej jeden warunek: dystans > 15 m, różnica kierunku > 30°, flaga alternatywnych kandydatów, dopasowanie Overture wyłącznie przestrzenne (bez referencji do OSM), droga serwisowa, panorama bez jednoznacznego kierunku, brak kierunku aparatu, droga z dostępem ograniczonym (`access` lub `motor_vehicle` = `private`/`no`), niezgodność przeliczonego dystansu lub kierunku z danymi wejściowymi.
-- **AC-07:** Para z niepewnym połączeniem nigdy nie dostaje kategorii `rozbieżne` na podstawie zdjęcia; dostaje `do sprawdzenia` z przyczyną `ambiguous_link`, także gdy odczyt zdjęcia jest pewny.
+- **AC-07:** Para z niepewnym połączeniem nigdy nie dostaje kategorii `rozbieżne` na podstawie zdjęcia; gdy zdjęcie jest jej jedynym dowodem, dostaje `do sprawdzenia` z przyczyną `ambiguous_link`, także gdy odczyt zdjęcia jest pewny. Różnica OSM–Overture przy obu wartościach porównywalnych pozostaje `rozbieżne` (ADR-001 §3.5; decyzja 2026-11-12).
 - **AC-08:** Brak kierunku aparatu jest traktowany jako brak, a `heading = 0` jako kierunek północny; raport podaje liczbę zdjęć bez kierunku.
-- **AC-09:** Raport podaje liczbę zdjęć z kandydatem drogi, bez kandydata i z połączeniem niepewnym; suma równa się liczbie zdjęć.
+- **AC-09:** Raport podaje liczbę zdjęć w trzech rozłącznych grupach: z pewnym połączeniem, z połączeniem niepewnym i bez kandydata drogi; suma równa się liczbie zdjęć.
 
 ### Porównanie atrybutów
 - **AC-10:** Każda porównana para (odcinek, atrybut) ma dokładnie jedną kategorię: `zgodne`, `rozbieżne` albo `do sprawdzenia`. Każda pozycja `do sprawdzenia` trafia do kolejki ręcznej i ma co najmniej jedną przyczynę z zamkniętej listy: `missing`, `not_comparable`, `ambiguous_link`, `abstain`, `model_unavailable`.
@@ -103,7 +103,7 @@ Prototyp (PoC) narzędzia dla analityka map QA i edytora OSM. Narzędzie zestawi
 - **AC-13:** Brak atrybutu w OSM dla drogi klasy `tertiary` lub wyższej (z łącznikami `*_link`) dostaje `do sprawdzenia` z adnotacją „brak atrybutu”.
 - **AC-14:** Żadna pozycja raportu ani dashboardu nie nosi etykiety „błąd mapy” bez decyzji analityka.
 - **AC-15:** Każdy kandydat w raporcie zawiera: identyfikator OSM, identyfikator Overture (jeśli jest), surowe wartości obu źródeł, daty źródeł, powód kategorii i identyfikator zdjęcia (jeśli jest).
-- **AC-16:** Raport podaje liczniki wykluczonych rekordów pogrupowane według powodu; żaden rekord nie jest usuwany bez licznika.
+- **AC-16:** Raport podaje liczniki wykluczonych rekordów pogrupowane według powodu; żaden rekord nie jest usuwany bez licznika. Para bez porównywalnego dowodu (OSM–Overture ani zdjęcia) jest wykluczeniem z licznikiem, nie kategorią `zgodne` ani pozycją kolejki ręcznej; wyjątek: brak atrybutu z AC-13 (decyzja 2026-11-12).
 
 ### Odczyt zdjęć modelem
 - **AC-17:** Model otrzymuje wyłącznie neutralny tekst pytania i obraz; nie otrzymuje nazw plików, identyfikatorów, etykiet referencyjnych, detekcji Mapillary ani atrybutów mapy.
@@ -187,7 +187,7 @@ Prototyp (PoC) narzędzia dla analityka map QA i edytora OSM. Narzędzie zestawi
 | Segmenty Overture | `course-materials/exercise-data/map-qa/overture_segments.parquet` | Każda kontrola |
 | Manifest zdjęć | `course-materials/exercise-data/map-qa/photos.csv` | Łączenie zdjęć, atrybucja |
 | Kandydaci połączeń | `course-materials/exercise-data/map-qa/photo_road_links.csv` | Punkt wyjścia łączenia; kandydaci, nie prawda |
-| Znaki ograniczenia | `course-materials/exercise-data/map-qa/traffic_signs.geojson` | Etap 1, prędkość |
+| Znaki ograniczenia | `course-materials/exercise-data/map-qa/traffic_signs.geojson` | Integralność i liczność w raporcie; bez wpływu na kategorie (ADR-001 §3.1, decyzja 2026-11-12) |
 | Zdjęcia znaków B-33 | `course-materials/exercise-data/map-qa/signs/` | Etap 1: pełne kadry z `photos/` do odczytu modelem; `labels.csv` tylko do ewaluacji |
 | Etykiety referencyjne | `course-materials/exercise-data/map-qa/reference_labels.csv` | Tylko ewaluacja odczytu; nigdy wejście modelu |
 | Miniatury offline | `course-materials/exercise-data/map-qa/offline/` | Praca bez sieci |
@@ -199,7 +199,7 @@ Prototyp (PoC) narzędzia dla analityka map QA i edytora OSM. Narzędzie zestawi
 ## 9. Opis interfejsu (poziom wireframe)
 
 ### 9.1. Wiersz poleceń
-- Polecenie kontroli z wyborem etapu (1, 2), limitem wywołań modelu (domyślnie 0) i katalogiem wyniku.
+- Polecenie kontroli z wyborem etapu (1, 2; etap 2 obejmuje także atrybuty etapu 1), limitem wywołań modelu (domyślnie 0) i katalogiem wyniku.
 - Podczas pracy wypisuje kolejne kroki i liczności.
 - Na końcu: liczba kandydatów w każdej kategorii, liczba wykluczeń, liczba wykonanych żądań do modelu, ścieżki raportów.
 - Błąd: czytelny komunikat po polsku, niezerowy kod wyjścia, bez częściowego raportu.
@@ -293,9 +293,9 @@ flowchart TD
 ## 12. Uwagi i otwarte kwestie
 
 - **Kategorie i przyczyny:** zostają trzy kategorie `zgodne` / `rozbieżne` / `do sprawdzenia`. Decyzja o eskalacji dodała do `do sprawdzenia` zamkniętą listę przyczyn (AC-10), po której dashboard może filtrować kolejkę ręczną.
-- **Eskalacja niepewnego połączenia zdjęcie–droga:** decyzja użytkownika obejmuje także te przypadki. Model drugiego stopnia nie widzi mapy, więc może poprawić odczyt cechy, ale nie rozstrzyga, której jezdni dotyczy zdjęcie; pozycja i tak trafia do kolejki ręcznej (AC-07). Takie eskalacje zużywają limit bez zmiany kategorii — do weryfikacji po pierwszej próbie.
+- **Eskalacja niepewnego połączenia zdjęcie–droga:** decyzja użytkownika obejmuje także te przypadki. Model drugiego stopnia nie widzi mapy, więc może poprawić odczyt cechy, ale nie rozstrzyga, której jezdni dotyczy zdjęcie; gdy zdjęcie jest jedynym dowodem, pozycja i tak trafia do kolejki ręcznej (AC-07). Takie eskalacje zużywają limit bez zmiany kategorii — do weryfikacji po pierwszej próbie.
 - **Próg 0,7** to wartość startowa; model drugiego stopnia nie musi zwracać prawdopodobieństw, więc sposób sygnalizowania jego niepewności ustala ADR.
-- **Progi startowe** (15 m, 30°) to założenie; zostaną zweryfikowane po profilu danych (M2) i zapisane ostatecznie przed końcową próbą modelu.
+- **Progi startowe** (15 m, 30°) to założenie; profil danych (2026-11-03) ich nie zmienił (dystans aparat–droga: p95 9,82 m, max 22,17 m). Ostateczne wartości zostaną zapisane przed końcową próbą modelu.
 - **Pytania o oświetlenie i skrzyżowanie** mają etykiety referencyjne tylko dla 100 zdjęć; wyniki trafności z tak małej próby nie uzasadniają wniosków o przewadze modelu.
 - **Próbka Mapillary** jest obciążona wyborem (zdjęcia przy znakach ograniczeń); udział rozbieżności prędkości nie reprezentuje całego miasta.
 - **Wybór modeli, technologii dashboardu i sposobu zapisu decyzji** należy do ADR.

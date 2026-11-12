@@ -168,7 +168,7 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 
 ## 5 faktów, które zmieniają projekt
 
-1. **Hash plików tekstowych nie zgadza się na Windows** (CRLF w kopii roboczej). Kontrola integralności z AC-02 zablokuje każdy run, dopóki repo albo `ingest` tego nie rozwiąże.
+1. **Hash plików tekstowych nie zgadza się na Windows** (CRLF w kopii roboczej). Kontrola integralności z AC-02 zablokuje każdy run, dopóki repo albo `ingest` tego nie rozwiąże. *Rozwiązane 2026-11-12 (krok 0c, `.gitattributes`).*
 2. **`maxspeed` jest zawsze liczbą**; `PL:urban`, `PL:zone30` itd. są w osobnym tagu `maxspeed:type`, a `none` i wielowartościowe `maxspeed` w tym snapshocie nie występują. Złożoność jest w `maxspeed:forward/backward` (223 drogi z różnymi wartościami) i `maxspeed:conditional` (92). Parser musi czytać te tagi, nie samą kolumnę.
 3. **Tylko ~83% reguł prędkości Overture jest bez `when`/`between`** (11 841 z 14 205); 911 segmentów ma ≥ 2 reguły. Reguła „porównywalna tylko jedna bezwarunkowa reguła” odrzuci te segmenty jako `not_comparable` — to świadome ograniczenie zasięgu.
 4. **72% dróg OSM to `service`**, a 15 000 dróg ma `access` private/no. Bez filtra dostępu i klasy pipeline zaleje kolejkę ręczną mało ważnymi dojazdami.
@@ -179,3 +179,5 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 1. **`compare-counts` w aplikacji:** liczności są już zgodne, a tabele nie wnoszą nowych danych. Czy komenda `map-qa compare-counts` (ADR-000 D-02) ma zostać w zakresie, czy wystarczy ręczne porównanie z kroku 0b? (Decyzja o CRLF jest już podjęta: wariant `.gitattributes`, plan krok 0c.)
 2. **Zakres dróg w etapie 1:** czy kolejka ręczna ma obejmować tylko `tertiary` i wyższe (8 739 dróg), czy także `residential` / `living_street` z `maxspeed`?
 3. **Kontrole przestrzenne w Databricks:** czy uruchomić teraz zapytania z `DATABRICKS.md` (poprawność geometrii, ponowne liczenie dystansu, pokrycie bbox), czy porównanie liczności wystarcza do M2?
+
+**Odpowiedzi (2026-11-12, audyt spójności):** 1 — `compare-counts` zostaje w aplikacji (ADR-000 §6, P3). 2 — kolejka `missing` tylko dla `tertiary`+; niższe klasy tworzą parę wyłącznie przy porównywalnym dowodzie z Overture lub zdjęcia; para bez porównywalnego dowodu to wykluczenie z licznikiem (ADR-001 §3.5, P1). 3 — bez decyzji; poza zakresem aplikacji (ADR-004).

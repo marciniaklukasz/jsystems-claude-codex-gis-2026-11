@@ -1,10 +1,10 @@
 # Plan implementacji — kontrola mapy
 
-**Data:** 2026-11-03 · **Gałąź:** `worktree-map-qa-prototype`
+**Data:** 2026-11-03, aktualizacja 2026-11-12 · **Gałąź:** `worktree-map-qa-prototype` (kroki 0a–0b), od 2026-11-12 `map-app-implementation`
 **Źródła:** [AGENTS.md](../AGENTS.md), [PRD](PRD.md), [ADR-000](ADR/000-main-architecture.md), [ADR-001](ADR/001-dane-normalizacja-dopasowanie.md), [ADR-002](ADR/002-odczyt-zdjec-modelami.md), [ADR-003](ADR/003-raport-i-dashboard.md)
-**Stan wyjściowy:** `app/` zawiera tylko README. Kroki 0a i 0b zrobione (uv 0.13.7, Python 3.12.16; `reports/map-qa/profile.md`, commit `d617668`).
+**Stan wyjściowy:** `app/` zawiera tylko README. Kroki 0a, 0b i 0c zrobione (uv 0.13.7, Python 3.12.16; `reports/map-qa/profile.md`, commit `d617668`; 0c: `a275ecb`).
 
-Wykonawca: Codex dla kroków bez modeli i raportu (M5, M7), Claude Code dla kroku z modelami (M6). Każdy krok to samodzielne zlecenie: agent czyta pliki z kolumny „Wejścia”, nie rusza plików spoza „Pliki”, kończy pokazaniem diffu i czeka na przegląd. Jeden agent edytuje dany plik w danej chwili.
+Wykonawcy, zależności i równoległość kroków 1–9 określa wyłącznie macierz w [planie orkiestracji](plans/map-qa-full-app-implementation-plan.md) §5–§7 (aktualizacja 2026-11-12); kolumna „Agent” poniżej jest historyczna. Każdy krok to samodzielne zlecenie: agent czyta pliki z kolumny „Wejścia”, nie rusza plików spoza „Pliki”, kończy pokazaniem diffu. Jeden agent edytuje dany plik w danej chwili.
 
 ---
 
@@ -37,18 +37,18 @@ Wykonawca: Codex dla kroków bez modeli i raportu (M5, M7), Claude Code dla krok
 |---|---|---|---|---|---|---|
 | 0a ✅ | Środowisko | AGENTS.md | `uv --version` w raporcie kroku | — | — | Użytkownik + agent |
 | 0b ✅ | Profil danych | README danych, `sources.json`, `profile.sql` | `reports/map-qa/profile.md` | 0a | ADR-000 §5.1, ADR-001 §2 | Codex |
-| 0c | Decyzje z profilu | `profile.md` „Porównanie z ADR”, ADR-001 | `.gitattributes`, ADR-001 §3.4, §4.1 | 0b | AC-02 na Windows, ADR-001 §3.3/§3.4/§4.3 zgodne z profilem | Claude Code |
+| 0c ✅ | Decyzje z profilu | `profile.md` „Porównanie z ADR”, ADR-001 | `.gitattributes`, ADR-001 §3.4, §4.1 | 0b | AC-02 na Windows, ADR-001 §3.3/§3.4/§4.3 zgodne z profilem | Claude Code |
 | 1 | Szkielet i integralność | ADR-000 §3–4, §6 | `app/pyproject.toml`, `uv.lock`, `.python-version`, `src/map_qa/{config,ingest,cli}`, `tests/` | 0c | AC-01–AC-03, TAC-05 | Codex |
 | 2 | Normalizacja | ADR-001 §4.1–4.3 | `src/map_qa/normalize`, `tests/unit/` | 1 | AC-12, TAC-001-01, TAC-001-04 | Codex |
 | 3 | CRS i ocena połączeń | ADR-001 §3.2–3.4 | `src/map_qa/matching`, `tests/` | 1 | AC-04, AC-06–AC-09, TAC-001-02/03 | Codex |
 | 4 | Kategorie i raport bez modelu | ADR-001 §3.5, ADR-003 §3.1 | `src/map_qa/{compare,report,templates}` | 2, 3 | AC-05, AC-10–AC-16, AC-21, AC-24–AC-26 | Codex (M5 + M7) |
 | 5 | Vision bez płatnych wywołań | ADR-002 §3–4 | `src/map_qa/{vision,store,evaluation}`, `config/thresholds.toml` | 4 | AC-17–AC-20f, AC-22, AC-23 (na transporcie testowym) | Claude Code (M6) |
 | 6 | Próba z przydziałem | ADR-002 §4.5, §4.7 | capture w `tests/fixtures/captures/`, run w `reports/map-qa/runs/` | 5 + zgoda + budżet | AC-19–AC-23 na rzeczywistym API | Claude Code (M6) |
-| 7 | Etap 2 PRD: oświetlenie i skrzyżowanie | ADR-001 §4.4 | rozszerzenie `normalize`, `compare`, pytania v2 | 4 (6 opcjonalnie) | AC-32 | Codex |
-| 8 | Dashboard | ADR-003 §3.2–3.3 | `app/dashboard/app.py`, `.streamlit/config.toml`, `store` | 4 | AC-27–AC-30, TAC-003-* | Codex |
+| 7 | Etap 2 PRD: oświetlenie i skrzyżowanie | ADR-001 §4.4 | rozszerzenie `normalize`, `compare`; pytania etapu 2 w `questions_version` 1 (ADR-002 §4.1) | 4 (6 opcjonalnie) | AC-32 | Codex |
+| 8 | Dashboard | ADR-003 §3.2–3.3 | `app/dashboard/app.py`, `.streamlit/config.toml` (używa `store` z kroku 5) | 4, 5 (`store`, T5.1) | AC-27–AC-30, TAC-003-* | Codex |
 | 9 | Przegląd końcowy | wszystko | uwagi w PR / issue | 1–8 | AC-31–AC-33 | Claude Code (review) |
 
-Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w osobnych worktree. Krok 8 może startować po kroku 4, równolegle z 5–7.
+Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w jednym checkoucie, bez worktree (rozłączne pliki, plan orkiestracji §6). Krok 8 może startować po utworzeniu `store` (T5.1), równolegle z resztą kroku 5 i krokiem 7 (krok 6 tylko po zgodzie).
 
 ---
 
@@ -92,7 +92,7 @@ Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w osobnych
 
 ### 4. Kategorie i raport bez modelu
 - Testy kategorii (ADR-001 §8), spójności MD/HTML/CSV, escapowania HTML, atrybucji, braku częściowego raportu, sekcji „Ograniczenia” przy niedostępnym Databricks (`compare-counts` bez zmiennych → kod 0 i wpis).
-- **Koniec:** `uv run map-qa check --stage 1` tworzy raport; wszystkie odczyty `model_unavailable`; 0 żądań sieciowych; jeden kandydat `rozbieżne` odtworzony ręcznie z wejść.
+- **Koniec:** `uv run map-qa check --stage 1` tworzy raport; brak manifestu i odczytów, pary ze zdjęciem jako jedynym dowodem mają `model_unavailable` (ADR-001 §3.5); 0 żądań sieciowych; jeden kandydat `rozbieżne` odtworzony ręcznie z wejść.
 - **Commit:** `App: candidate categories and Markdown/HTML/CSV report`.
 
 ### 5. Vision bez płatnych wywołań
@@ -110,17 +110,17 @@ Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w osobnych
 - **Commit:** `App: first paid decision trial with safe captures`.
 
 ### 7. Etap 2 PRD
-- Pytania `street_lighting_visible`, `junction_visible` (`questions_version` 2); topologia przez `node_ids`; most/tunel/granica wycinka → `not_comparable`.
+- Pytania `street_lighting_visible`, `junction_visible` (`questions_version` 1 — ADR-002 §4.1, decyzja 2026-11-12); run `--stage 2` jest nadzbiorem etapu 1; topologia przez `node_ids`; most/tunel/granica wycinka → `not_comparable`.
 - **Koniec:** `uv run map-qa check --stage 2` z kodem 0; ręcznie sprawdzony jeden węzeł skrzyżowania.
 - **Commit:** `App: lighting and junction checks`.
 
 ### 8. Dashboard
-- Testy `store` (trwałość, historia, walidacja); E2E Playwright CLI: filtr, zapis decyzji, przeładowanie, zakładka „Do poprawy”, brak żądań poza localhost.
+- Testy logiki dashboardu i zapisu decyzji przez `store` z kroku 5 (trwałość, historia, walidacja); E2E Playwright CLI: filtr, zapis decyzji, przeładowanie, zakładka „Do poprawy”, brak żądań poza localhost.
 - **Koniec:** Manual QA ze zrzutami obu zakładek, polskie teksty, brak błędów konsoli.
 - **Commit:** `App: Streamlit review dashboard`.
 
 ### 9. Przegląd końcowy
-- Review diffu od commitu bazowego (hash zapisany przed krokiem 1) świeżą sesją bez kontekstu implementacji; lista niespełnionych AC.
+- Review diffu od commitu bazowego `63974fe` (plan orkiestracji; zastępuje hash zapisywany przed krokiem 1) świeżą sesją bez kontekstu implementacji; lista niespełnionych AC.
 
 ---
 
@@ -136,10 +136,10 @@ Wszystko z PRD §7, w tym edycja OSM, praca wielu użytkowników, trening modeli
 | Większość zdjęć Panoramax tylko online | Mała próbka nawierzchni | `download_photos.py` w 0b; próbka z plików lokalnych |
 | Dużo `not_comparable` | Długa kolejka ręczna | Wyzwalacz D-102 (> 40%) |
 | Próbka 25 par | Brak wniosków o modelach | Raport podaje liczności; bez porównań statystycznych |
-| Dwa agenty w jednym pliku | Konflikty | Kroki 2/3 i 8 tylko w osobnych worktree |
+| Dwa agenty w jednym pliku | Konflikty | Rozłączne „Editable files” i hotspoty z jednym właścicielem (plan orkiestracji §5–§7), jeden checkout |
 
 ## Pierwsza czynność
-Krok 0c: reguła `-text` w `.gitattributes` dla `course-materials/exercise-data/**`, ponowny checkout plików danych i kontrola hashy z `sources.json`.
+~~Krok 0c~~ — wykonany 2026-11-12. Następna czynność: T0.1 z planu orkiestracji.
 
 ## Commit dokumentacji przed krokiem 1
-Po akceptacji planu: `git add docs`, commit `Docs: PRD, ADR, plan`, zapis hasha (`git rev-parse HEAD`) jako bazy do przeglądu w kroku 9.
+Po akceptacji planu: `git add docs`, commit `Docs: PRD, ADR, plan`, zapis hasha (`git rev-parse HEAD`) jako bazy do przeglądu w kroku 9. Aktualizacja 2026-11-12: bazą przeglądu jest `63974fe`.

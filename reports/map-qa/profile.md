@@ -160,7 +160,7 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 1. **Hash a końce linii (blokuje krok 1).** Do wyboru:
    - (a) reguła w `.gitattributes`: pliki danych `course-materials/exercise-data/**` bez konwersji końców linii (`-text`) i ponowny checkout tych plików — hash zgodny z `sources.json`;
    - (b) `ingest` liczy hash plików tekstowych po zamianie CRLF → LF — słabsza kontrola, bez zmiany repozytorium.
-   Rekomendacja: (a), bo to błąd konfiguracji repozytorium, nie danych; wymaga zgody (zmiana wspólnego pliku i katalogu materiałów).
+   Rekomendacja: (a), bo to błąd konfiguracji repozytorium, nie danych. **Wybrano (a)** 2026-11-12 (plan krok 0c); stan 2026-11-12: reguła jeszcze niedodana.
 2. ADR-001 §4.1: wartości `PL:*` występują w `maxspeed:type`, nie w `maxspeed`; reguła „`implicit` → `not_comparable`” w praktyce nie zadziała na tych danych. Bez zmiany decyzji — `maxspeed:type` zostaje informacyjny.
 3. ADR-001 §4.3: dopisać do mapowania Overture `paving_stones` → paved, `gravel`/`dirt` → unpaved, `unknown` → `not_comparable`; literówki OSM pozostają `not_comparable`.
 4. ADR-001 §3.3: parser `record_id` toleruje brak `@wersja`.
@@ -176,6 +176,6 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 
 ## 3 pytania do człowieka
 
-1. **CRLF a hash:** zgadzasz się na regułę `-text` w `.gitattributes` dla `course-materials/exercise-data/**` i ponowny checkout (rekomendacja), czy wolisz normalizację CRLF → LF w `ingest`?
+1. **`compare-counts` w aplikacji:** liczności są już zgodne, a tabele nie wnoszą nowych danych. Czy komenda `map-qa compare-counts` (ADR-000 D-02) ma zostać w zakresie, czy wystarczy ręczne porównanie z kroku 0b? (Decyzja o CRLF jest już podjęta: wariant `.gitattributes`, plan krok 0c.)
 2. **Zakres dróg w etapie 1:** czy kolejka ręczna ma obejmować tylko `tertiary` i wyższe (8 739 dróg), czy także `residential` / `living_street` z `maxspeed`?
 3. **Kontrole przestrzenne w Databricks:** czy uruchomić teraz zapytania z `DATABRICKS.md` (poprawność geometrii, ponowne liczenie dystansu, pokrycie bbox), czy porównanie liczności wystarcza do M2?

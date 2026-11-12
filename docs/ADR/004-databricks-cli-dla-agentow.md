@@ -9,7 +9,7 @@
 
 ## 1. Kontekst
 
-- Profil danych (krok 0b) potwierdził liczności i schemat plików lokalnych, ale nie porównał ich z tabelami `workspace.map_qa`, bo w sesji nie było tokenu (profil, „Ograniczenia”).
+- Profil danych (krok 0b) potwierdził liczności i schemat plików lokalnych, ale nie porównał ich z tabelami `workspace.map_qa`, bo w sesji nie było tokenu (profil, „Ograniczenia”). Porównanie wykonano 2026-11-12 — patrz §5.
 - ADR-000 D-02 odrzucił Databricks CLI **jako zależność aplikacji**: komenda `map-qa compare-counts` używa `urllib`. Ta decyzja zostaje.
 - Ćwiczenie M2 wymaga, aby **agent** (Claude Code lub Codex) odczytał tabele, porównał liczności i wykonał kontrole przestrzenne. Do tego potrzebne jest narzędzie deweloperskie z kontrolą uprawnień, a nie nowa zależność aplikacji.
 - Wspólny token prowadzącego ma zakres API `sql`. Zakres nie ogranicza SQL do odczytu, bo obowiązują uprawnienia właściciela tokenu. Za tryb tylko-do-odczytu odpowiada więc agent i reguły uprawnień.
@@ -110,5 +110,6 @@ sequenceDiagram
 ## 5. Otwarte kwestie
 
 - Czy domyślny filtr Codex przepuszcza `DATABRICKS_TOKEN` na tej wersji (0.167.2) — sprawdzić pierwszym zapytaniem; wynik dopisać tutaj.
-- `traffic_signs` nie ma liczności z profilu plików; porównanie 1 730 z `traffic_signs.geojson` do dopisania w profilu.
+- ~~`traffic_signs` nie ma liczności z profilu plików~~ — rozwiązane 2026-11-12: `traffic_signs.geojson` ma 1 730 wierszy (1 730 unikalnych `id`), równo z tabelą.
+- TAC-004-02 spełnione 2026-11-12 przez Claude Code: liczności 99 768 / 85 405 / 561 / 561 / 1 730 zgodne z plikami. Zapytanie poszło przez `query_databricks.py` (REST, `urllib`), nie przez `databricks api post`; `DATABRICKS_SQL_WAREHOUSE_ID` nie był ustawiony w środowisku i został podany z DATABRICKS.md tylko dla tego polecenia. TAC-004-01 (wersja CLI) w tej sesji nie sprawdzano.
 - Instalacja dodaje `databricks` do PATH dopiero w nowym terminalu; sesja agenta uruchomiona wcześniej go nie widzi.

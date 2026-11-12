@@ -63,7 +63,7 @@ Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w osobnych
 - `uv run --python 3.12 course-materials/exercise-data/map-qa/profile_data.py`; kontrola GeoPandas i EPSG:2180 z README danych.
 - Wypisanie typów kolumn `speed_limits`, `road_surface`, `sources` z `overture_segments.parquet`.
 - Rozkład wartości `maxspeed*` i `surface` w OSM; liczności flag w `photo_road_links.csv`; dostępność zdjęć lokalnych (`download_photos.py --verify-only`).
-- Databricks `compare-counts` ręcznie z DATABRICKS.md, jeśli token jest dostępny; inaczej zapis ograniczenia.
+- Databricks `compare-counts` ręcznie z DATABRICKS.md, jeśli token jest dostępny; inaczej zapis ograniczenia. ✅ Uzupełnione 2026-11-12, commit `2de4521`: pięć tabel zgodnych z plikami.
 - **Koniec:** `profile.md` z poleceniami, wersjami, hashami, licznościami; porównanie z ADR-000 §5.1. Rozbieżność → aktualizacja ADR przed krokiem 1.
 - **Commit:** `Docs: map QA data profile`.
 

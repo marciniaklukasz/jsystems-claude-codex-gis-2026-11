@@ -82,7 +82,7 @@ Wejścia w `course-materials/exercise-data/map-qa/` są tylko do odczytu.
 | Profil i agregacje | DuckDB spatial | Szybkie liczności na 100 tys. dróg bez ładowania do pamięci; nie w ścieżce pipeline'u |
 | Źródło danych | Lokalne GeoParquet/CSV | Działa offline, ma hashe w `sources.json` |
 | Źródło opcjonalne | Databricks SQL Statement Execution API przez `urllib` | Pięć zapytań `count(*)`; brak nowej zależności |
-| Model decyzyjny | `openai/gpt-6-luna-decisions` (główny), `typesafe/jev-1.14` (porównawczy) | Pytanie `choice` zwraca prawdopodobieństwa do progu abstencji |
+| Model decyzyjny | `typesafe/jev-1.14` (główny), `openai/gpt-6-luna-decisions` (porównawczy); oba w `thresholds.toml` (D-04, zmiana 2026-11-12) | Pytanie `choice` zwraca prawdopodobieństwa do progu abstencji |
 | LLM drugiego stopnia | `openai/gpt-6-luna` przez chat, `reasoning.effort=medium`, structured output | Obsługuje obrazy, reasoning i `response_format`; tani |
 | Klient API | Oficjalny SDK `openrouter` 1.3.107 | Typowane odpowiedzi i błędy; retry wyłączone jawnie |
 | Raport | Jinja2 (autoescape dla HTML) + pandas CSV | Tagi OSM to niezaufany tekst; jeden szablon na format |
@@ -202,13 +202,13 @@ Aplikacja sprawdza tylko obecność zmiennych; nigdy nie wypisuje, nie loguje i 
 **Review trigger:** SDK nie pozwala ustawić timeoutu dla `decisions.create` (niezweryfikowane) — wtedy surowy POST przez `urllib` dla Decisions.
 
 ### D-04: Modele
-**Status:** Accepted · **Data:** 2026-11-03
-**Context:** PRD: model główny (25 żądań), porównawczy (5), drugi stopień (10).
-**Decision:** Główny `openai/gpt-6-luna-decisions` ($0.10/M tokenów wejścia); porównawczy `typesafe/jev-1.14` ($0.042/M); drugi stopień `openai/gpt-6-luna` przez chat ($0.10/M wejście, $0.50/M wyjście), `reasoning.effort = medium`.
+**Status:** Accepted (zmieniona 2026-11-12, wytyczne prowadzącego) · **Data:** 2026-11-03
+**Context:** PRD: model główny (25 żądań), porównawczy (5), drugi stopień (10). Prowadzący 2026-11-12: „Model decyzyjny: `typesafe/jev-1.14`; opcjonalnie zamiast Jev: `openai/gpt-6-luna-decisions`”; LLM dla chatu: `openai/gpt-6-luna`; tylko endpointy OpenRouter.
+**Decision:** Główny `typesafe/jev-1.14` ($0.042/M wejście, $0 wyjście, kontekst 262K); porównawczy `openai/gpt-6-luna-decisions` ($0.10/M wejście, $0 wyjście, kontekst 1.1M); oba multimodalne. Identyfikatory modelu głównego i porównawczego są w `config/thresholds.toml` (`decision_model`, `comparison_model`), więc zamiana ról nie wymaga zmiany kodu; zmiana modelu zmienia klucz cache (AC-22). drugi stopień `openai/gpt-6-luna` przez chat ($0.10/M wejście, $0.50/M wyjście), `reasoning.effort = medium`.
 **Rejected alternatives:**
-- Jev jako główny: tańszy, ale wymaga obrazów 256–1568 px i JPEG/PNG; zostawiamy go do porównania na tych samych zdjęciach.
+- Luna Decisions jako główny (pierwotna decyzja 2026-11-03): odrzucone 2026-11-12 zgodnie ze wskazaniem prowadzącego; Jev jest 2,4× tańszy na wejściu, a jego wymagania obrazu (JPEG/PNG, bok 256–1568 px) spełnia przygotowanie obrazu z ADR-002 §4.6. Luna Decisions zostaje modelem porównawczym.
 - `google/gemini-3.8-flash` jako drugi stopień: niezależna rodzina modeli, ale ~7,5× droższe wejście.
-**Consequences:** (+) koszt próby rzędu centów. (−) drugi stopień z tej samej rodziny co główny może powielać jego błędy.
+**Consequences:** (+) koszt próby rzędu centów. (+) od 2026-11-12 drugi stopień (`openai/gpt-6-luna`) jest z innej rodziny niż model główny (Jev), więc rzadziej powiela jego błędy. (−) model porównawczy Luna Decisions i drugi stopień są z tej samej rodziny OpenAI.
 **Review trigger:** drugi stopień rozstrzyga < 20% eskalacji w próbie walidacyjnej albo model zniknie z `/api/v1/models`.
 
 ### D-05: SQLite dla stanu
@@ -324,7 +324,7 @@ TDD dla każdego etapu planu: test z kryterium PRD → uruchomienie i oczekiwane
 |---|---|---|---|
 | Unit | Funkcje czyste i moduły z mockami | `normalize`, flagi `matching`, kategorie `compare`, budżet, cache, walidacja odpowiedzi modelu | pytest |
 | Integration | Prawdziwe wiersze danych i SQLite w katalogu tymczasowym; mock tylko OpenRouter (z capture) | `ingest` na plikach, CRS i dystanse, łańcuch eskalacji, zapis raportu | pytest, `tmp_path` |
-| E2E | Bez mocków | Rzeczywiste CLI na plikach map-qa; dashboard przez Playwright CLI; jedno płatne wywołanie tylko z przydziałem | uv, Playwright CLI |
+| E2E | Bez mocków | Rzeczywiste CLI na plikach map-qa; dashboard przez Playwright CLI; prawdziwe wywołania Luna Decisions, Jev i Luna LLM w ramach przydziału prowadzącego (2026-11-12, łącznie ≤ 1 USD) | uv, Playwright CLI |
 
 ### Kluczowe scenariusze (przekrojowe)
 - **Integralność:** zmieniony bajt w kopii pliku → kod 1 i brak raportu; hashe wejść identyczne przed i po runie.

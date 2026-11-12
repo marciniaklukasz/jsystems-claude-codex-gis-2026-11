@@ -21,9 +21,11 @@ Moduły `vision` i `evaluation`: wybór próbki, przygotowanie obrazu, kontrakt 
 | SDK Python | `/openrouterteam/python-sdk`; https://openrouter.ai/docs/client-sdks/python/sdks/decisions/README | Pakiet `openrouter==1.3.107`; `alpha.decisions.create(...)`, `chat.send(...)`; parametr `retries`; domyślnie backoff do 1 h |
 | Reasoning | https://openrouter.ai/docs/use-cases/reasoning-tokens | `reasoning.effort` ∈ {…, `medium`, …}; reasoning dzieli budżet tokenów wyjścia z odpowiedzią |
 | Structured outputs | https://openrouter.ai/docs/features/structured-outputs | `response_format` typu `json_schema` ze `strict: true` |
-| Ceny | `GET https://openrouter.ai/api/v1/models/{id}/endpoints` | Luna Decisions $0.10/M wejście, $0 wyjście; Jev 1.14 $0.042/M; `openai/gpt-6-luna` $0.10/M wejście, $0.50/M wyjście |
+| Ceny | `GET https://openrouter.ai/api/v1/models/{id}/endpoints`; https://openrouter.ai/typesafe/jev-1.14, https://openrouter.ai/openai/gpt-6-luna-decisions | Jev 1.14 $0.042/M wejście, $0 wyjście, kontekst 262K; Luna Decisions $0.10/M wejście, $0 wyjście, kontekst 1.1M; oba multimodalne (obraz jako wejście); `openai/gpt-6-luna` $0.10/M wejście, $0.50/M wyjście |
 
 **Do potwierdzenia przed kodem (nie zgadywać):** `timeout_ms` w `alpha.decisions.create`; nazwy argumentów konstruktora `OpenRouter`; położenie `provider.require_parameters` w `chat.send`; czy chat zwraca `usage.cost`; czy SDK udostępnia nagłówki odpowiedzi.
+
+**Kontrakt połączenia (uzupełnienie 2026-11-12, decyzja użytkownika):** wszystkie trzy modele (`openai/gpt-6-luna-decisions`, `typesafe/jev-1.14`, `openai/gpt-6-luna`) są wywoływane **wyłącznie przez OpenRouter**: Decisions → `https://openrouter.ai/api/alpha/decisions`, chat → `https://openrouter.ai/api/v1/chat/completions` (przez SDK `openrouter`, domyślny serwer SDK; `server_url` nie jest konfigurowalny z CLI ani `thresholds.toml`). Jedynym kluczem jest `OPENROUTER_API_KEY` czytany z `os.environ` (zmienna ustawiona na poziomie użytkownika); aplikacja nie czyta `.env`, nie używa `OPENAI_API_KEY` ani klienta OpenAI. Test jednostkowy sprawdza, że skonfigurowany klient wskazuje host `openrouter.ai`, a capture (§4.5) zapisuje rzeczywisty URL endpointu.
 
 ---
 
@@ -59,7 +61,7 @@ Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Wersja 1 o
 Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 
 ### 4.2. Żądanie Decisions
-- `model`: `openai/gpt-6-luna-decisions` lub `typesafe/jev-1.14`.
+- `model`: główny `typesafe/jev-1.14`, porównawczy `openai/gpt-6-luna-decisions` (ADR-000 D-04, zmiana 2026-11-12); wartości z `thresholds.toml` (`decision_model`, `comparison_model`).
 - `state`: tablica dokładnie dwóch części: tekst „Street-level photograph. Answer about what is visible.” i obraz jako data URL JPEG. Nic więcej (PRD AC-17): bez nazwy pliku, `photo_id`, etykiet, detekcji, atrybutów mapy, współrzędnych.
 - `questions`: mapa z jednym kluczem `question_id`.
 - `provider`: `allow_fallbacks = false` (bez cichej zmiany dostawcy w trakcie próby).
@@ -70,7 +72,7 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Odczyt: `answers[question_id].choice`, `.probabilities`, `.confidence`; `usage.cost`.
 - **Pewny** odczyt modelu głównego: `choice` ∈ opcje, `choice` ≠ `unknown`, max(`probabilities`) ≥ próg `abstain_threshold` (start 0,7, AC-20a) i połączenie zdjęcia pewne (ADR-001 §3.4).
 - Inaczej → eskalacja (§4.4). Błąd HTTP / wyjątek SDK / timeout → model główny wyłączony do końca runu (AC-20), pytanie eskaluje.
-- Model porównawczy (Jev) nie wpływa na kategorie ani eskalację; jego wynik trafia tylko do tabeli porównania.
+- Model porównawczy (domyślnie Luna Decisions) nie wpływa na kategorie ani eskalację; jego wynik trafia tylko do tabeli porównania.
 
 ### 4.4. Drugi stopień (`chat.send`)
 - `model`: `openai/gpt-6-luna`; `reasoning.effort = medium`; limit tokenów wyjścia z `thresholds.toml` (start 1024).
@@ -81,14 +83,14 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Każdy niepewny odczyt eskaluje najwyżej raz (AC-20b).
 
 ### 4.5. Capture i mock
-- Pierwsze rzeczywiste żądanie dla każdej pary (endpoint, model) w próbie z przydziałem jest zapisywane w `app/tests/fixtures/captures/<data>_<model>.json` **zanim** powstanie jakikolwiek mock.
+- Pierwsze rzeczywiste żądanie dla każdej pary (endpoint, model) — osobne zadanie capture przed implementacją `vision` (plan orkiestracji T5.2b; przydział prowadzącego 2026-11-12) — jest zapisywane w `app/tests/fixtures/captures/<data>_<model>.json` **zanim** powstanie jakikolwiek mock.
 - Zawartość: data UTC, endpoint, wersja SDK, model, status HTTP, nagłówki z listy dozwolonej (`content-type`, `date`, identyfikator żądania; inne odrzucone; jeśli SDK nie udostępnia nagłówków — pole z adnotacją „niedostępne przez SDK”), pełne ciało odpowiedzi, treść żądania z obrazem zastąpionym przez `sha256` i rozmiar.
 - Przed zapisem: test odrzuca plik, jeśli zawiera nagłówek `authorization`, ciąg `sk-or-` albo wartość zmiennej `OPENROUTER_API_KEY`.
-- Mocki w testach jednostkowych i integracyjnych zwracają wyłącznie ciała z capture (ewentualnie z podmienioną jedną wartością opisaną w teście). Bez capture → testy integracyjne modelu są pomijane z jawnym powodem, nie zastępowane wymyśloną odpowiedzią.
+- Mocki w testach jednostkowych i integracyjnych zwracają wyłącznie ciała z capture (ewentualnie z podmienioną jedną wartością opisaną w teście). Bez capture → testy integracyjne modelu są pomijane z jawnym powodem, nie zastępowane wymyśloną odpowiedzią. Testy manualne i E2E nie używają mocków: wywołują prawdziwe endpointy (uzupełnienie 2026-11-12, polecenie prowadzącego).
 
 ### 4.6. Obraz
 - Źródło: pełny kadr. Zdjęcia `signs/photos/` (prędkość), `offline/` lub `data/photos/` po `download_photos.py --verify-only` (pozostałe). Zdjęcie bez lokalnego pliku z poprawnym SHA-256 nie wchodzi do próbki.
-- Najdłuższy bok > 1568 px → zmniejszenie proporcjonalne do 1568 px (Pillow 12.0.0, LANCZOS, JPEG quality 90). Bez wycinania. Mniejsze obrazy — bajty bez zmian.
+- Najdłuższy bok > 1568 px → zmniejszenie proporcjonalne do 1568 px (Pillow 12.0.0, LANCZOS, JPEG quality 90). Bez wycinania. Mniejsze obrazy — bajty bez zmian. Najkrótszy bok < 256 px albo format inny niż JPEG/PNG → zdjęcie poza próbką z licznikiem (wymaganie Jev jako modelu głównego, 2026-11-12).
 - Klucz cache i logi używają `image_sha256` wysłanych bajtów; base64 nigdy nie trafia do logów, raportu ani capture.
 
 ### 4.7. Próbka (`sample_manifest.csv`)
@@ -245,7 +247,7 @@ sequenceDiagram
 
 ## 8. Strategia testów
 
-Kolejność pracy w etapie M6: testy walidacji, limitu, cache i abstencji (Red) → minimum kodu (Green) → zgoda użytkownika i przydział → jedno rzeczywiste żądanie i capture → dopiero potem testy oparte na mocku z capture → mała próba.
+Kolejność pracy w etapie M6: testy walidacji, limitu, cache i abstencji (Red) → minimum kodu (Green) → jedno rzeczywiste żądanie na parę (endpoint, model) i capture (przydział prowadzącego 2026-11-12) → dopiero potem testy oparte na mocku z capture → mała próba.
 
 | Scenariusz | Typ | Wejście | Oczekiwany wynik | Przypadki brzegowe |
 |---|---|---|---|---|
@@ -262,7 +264,7 @@ Kolejność pracy w etapie M6: testy walidacji, limitu, cache i abstencji (Red) 
 | Próbka | Unit | etykiety z 2 sekwencji | cała sekwencja w jednym podziale; manifest zapisany przed żądaniem | etykieta `uncertain` pominięta |
 | Capture bez sekretów | Unit | capture z nagłówkiem `authorization` | zapis odrzucony | ciąg `sk-or-` w ciele |
 | Ewaluacja | Unit | 4 pary, 3 pewne, 2 poprawne | pokrycie 0,75, trafność 0,67 | 0 pewnych → trafność „brak danych”, nie 0 |
-| Rzeczywista próba | E2E (tylko z przydziałem) | `--decision-limit 1` | 1 żądanie, capture zapisany, koszt w raporcie | brak klucza → `model_unavailable`, kod 0 |
+| Rzeczywista próba | E2E (prawdziwe API, bez mocków; przydział ≤ 1 USD) | `--decision-limit 1` | 1 żądanie, capture zapisany, koszt w raporcie | brak klucza → `model_unavailable`, kod 0 |
 
 ### Techniczne kryteria akceptacji
 - **TAC-002-01:** Licznik `sent` w `budget_ledger` po runie równa się liczbie żądań zarejestrowanych przez transport testowy, dla każdego modelu.

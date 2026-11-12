@@ -23,9 +23,9 @@ Wykonawcy, zależności i równoległość kroków 1–9 określa wyłącznie ma
 
 ## Ochrona kosztu (obowiązuje cały plan)
 
-- Domyślne limity modeli = 0; kroki 0a–5, 7–9 nie wykonują żadnego płatnego żądania.
-- Płatne żądania tylko w kroku 6, po zgodzie użytkownika na konkretny manifest i przydziale budżetu przez prowadzącego.
-- Limit obejmuje wszystkie próby i błędy: Luna ≤ 25, Jev ≤ 5, drugi stopień ≤ 10, `--max-cost-usd` jawnie podany.
+- Domyślne limity modeli w aplikacji = 0 (zachowanie produktu, AC-19b). **Przydział prowadzącego 2026-11-12:** wywołania Luna Decisions, Jev i Luna LLM w testach bez limitu liczby, łącznie ≤ 1 USD na cały plan (stop przy 0,80 USD); szczegóły w [planie orkiestracji §2](plans/map-qa-full-app-implementation-plan.md).
+- Testy manualne i E2E używają prawdziwych endpointów bez mocków; mocki tylko w unit/integration i wyłącznie z capture prawdziwej odpowiedzi (capture przed pierwszym mockiem, zadanie T5.2b).
+- Limit obejmuje wszystkie próby i błędy: model główny Jev ≤ 25, porównawczy Luna Decisions ≤ 5, drugi stopień Luna LLM ≤ 10 (ADR-000 D-04, zmiana 2026-11-12), `--max-cost-usd` jawnie podany.
 - Zero automatycznych retry (także w SDK), timeout 40 s, pierwszy błąd wyłącza model w runie.
 - Agent sprawdza tylko obecność `OPENROUTER_API_KEY`; nie czyta `.env`, nie wypisuje wartości.
 
@@ -103,9 +103,9 @@ Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w jednym c
 - **Commit:** `App: vision cascade, budget and cache (no paid calls)`.
 
 ### 6. Próba z przydziałem
-- Pokazanie manifestu próbki i limitów; **czekanie na zgodę użytkownika i budżet**.
-- Pierwsze żądanie (`--decision-limit 1`) → capture bez sekretów → mocki z capture → odblokowanie pominiętych testów.
-- Mała próba w granicach przydziału; Jev na pierwszych parach; drugi stopień tylko dla niepewnych.
+- Pokazanie manifestu próbki i limitów (przydział prowadzącego 2026-11-12, łącznie ≤ 1 USD — bez czekania na osobną zgodę).
+- Capture prawdziwych odpowiedzi powstaje wcześniej (T5.2b), zanim powstanie pierwszy mock; tu E2E `live` bez mocków i pełny run z limitami.
+- Mała próba w granicach przydziału; model porównawczy (Luna Decisions) na pierwszych parach wysłanych do Jev; drugi stopień tylko dla niepewnych.
 - **Koniec:** raport z kosztem, liczbą żądań na model, odczytami na stopień, trafnością i pokryciem; ręcznie obejrzane wszystkie niezgodności z etykietami.
 - **Commit:** `App: first paid decision trial with safe captures`.
 

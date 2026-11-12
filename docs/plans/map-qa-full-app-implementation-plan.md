@@ -1,6 +1,6 @@
 # Plan implementacji całej aplikacji map-qa (orkiestracja agentów)
 
-> **Status: ZAAKCEPTOWANY 2026-11-12** — wykonanie autoryzowane przez użytkownika jako cel „zaimplementuj cały plan”. Decyzje: G-DESIGN → domyślny motyw Streamlit; G-PUB → push na `origin` po każdym milestone; PR na każdy milestone (A–D). G-PAID bez zmian (T6 tylko po osobnej zgodzie i przydziale). Merge PR pozostaje decyzją człowieka.
+> **Status: ZAAKCEPTOWANY 2026-11-12** — wykonanie autoryzowane przez użytkownika jako cel „zaimplementuj cały plan”. Decyzje: G-DESIGN → domyślny motyw Streamlit; G-PUB → push na `origin` po każdym milestone; PR na każdy milestone (A–D). G-PAID → przydział prowadzącego ≤ 1 USD na modele aplikacji (T5.2b capture, T6 E2E na prawdziwym API); mocki tylko w unit/integration i tylko z capture. Merge PR pozostaje decyzją człowieka.
 >
 > **Poprawki po audycie spójności 2026-11-12 (P1–P7):** macierz §5 (T0.2, T1.1–T1.3, T3.x, T4.x, R-A, T5.2, T5.4, T7.x z nowym T7.3, T8.2, R-F), §3 (review względem `63974fe`, kontrola Git dla H), §6–§8. Decyzje P1–P7 zapisane w PRD i ADR-000…004 (zmiany z datą 2026-11-12).
 
@@ -33,7 +33,9 @@
 | Worker alternatywny | OpenCode, **`xiaomi-token-plan-ams/mimo-v2.6-flash`** (Xiaomi Token Plan) | Szablony, proste testy, dokumentacja techniczna | `opencode run` (headless) |
 | Review i akceptacja | Orkiestrator + `codex exec review` (Sol) + **człowiek** | Każdy milestone i finał | — |
 
-**Budżet (ograniczenie):** workerzy wyłącznie w ramach abonamentów (Claude, ChatGPT/Codex, Xiaomi Token Plan). **Nie używać** `openrouter/xiaomi/*` (płatne per token). **Zero żądań OpenRouter** poza T6 (wymaga zgody i przydziału, [plan.md „Ochrona kosztu”](../plan.md#ochrona-kosztu-obowiązuje-cały-plan)). Copilot poza pulą (decyzja użytkownika 2026-11-12).
+**Budżet (ograniczenie):** workerzy wyłącznie w ramach abonamentów (Claude, ChatGPT/Codex, Xiaomi Token Plan). **Nie używać** `openrouter/xiaomi/*` (płatne per token). **Modele aplikacji przez OpenRouter** (główny `typesafe/jev-1.14`, porównawczy `openai/gpt-6-luna-decisions`, drugi stopień `openai/gpt-6-luna`; ADR-000 D-04 zmiana 2026-11-12): **przydział prowadzącego 2026-11-12 — bez limitu liczby wywołań w testach**, łączny koszt testów i runów całego planu ≤ **1 USD** (sumowany z `usage.cost` w capture i raportach; przekroczenie 0,80 USD → zatrzymanie płatnych wywołań i wpis w trackerze). Limity per run z PRD (AC-19, AC-20c: 25/5/10, domyślnie 0) obowiązują dalej jako zachowanie produktu. Copilot poza pulą (decyzja użytkownika 2026-11-12).
+
+**Zasada mocków (polecenie prowadzącego 2026-11-12):** testy manualne i E2E używają **prawdziwych endpointów** (Luna Decisions, Jev, Luna LLM), bez mocków. Mocki wolno stosować wyłącznie w testach unit i integration, i tylko pochodne z zapisanego capture prawdziwego żądania i odpowiedzi (T5.2b, [ADR-002 §4.5](../ADR/002-odczyt-zdjec-modelami.md)).
 
 **Eskalacja:** worker nie dowozi Green po 2 próbach z poprawionym briefem, albo raportuje sprzeczność w kontrakcie → zadanie przechodzi o stopień wyżej (Haiku/MiMo/Luna → Sol → orkiestrator). Każda eskalacja = wpis w trackerze z powodem.
 
@@ -77,7 +79,7 @@ Narzędzie Agent: `model: "haiku"`, `run_in_background: true`, prompt = treść 
 
 | Bramka | Kiedy | Dlaczego | W trybie autonomicznym |
 |---|---|---|---|
-| G-PAID | przed T6 | Płatne OpenRouter: zgoda na manifest + budżet ([plan.md §6](../plan.md#6-próba-z-przydziałem)) | **Pominąć T6**, kontynuować T7–T8; AC-19–AC-23 na realnym API zostają niezweryfikowane i trafiają do raportu końcowego |
+| G-PAID | przed T5.2b i T6 | ~~Zgoda na budżet~~ **Rozstrzygnięte 2026-11-12:** przydział prowadzącego, łącznie ≤ 1 USD (§2) | Wykonać T5.2b i T6 bez zatrzymania; zatrzymać płatne wywołania przy 0,80 USD łącznie albo przy braku `OPENROUTER_API_KEY` (wtedy T6 = niezweryfikowane) |
 | G-DESIGN | przed T8.3 | Brak referencji wizualnej (AGENTS.md Manual QA pkt 5) | Użyć domyślnego motywu Streamlit + polskie teksty; zgodność wizualna oznaczona jako niezweryfikowana |
 | G-PUB | push / PR | Publikacja wymaga zgody | Push i PR tylko jeśli cel wprost na to pozwala; zawsze `origin` (fork), nigdy `upstream` |
 | G-ARCH | sprzeczność PRD/ADR | Architektura nie może być wymyślona w planie | Zatrzymać dotknięty wątek, zapisać **proponowany ADR** w `docs/ADR/`, kontynuować niezależne zadania |
@@ -106,29 +108,30 @@ Kolumna „Owner/model”: **O** = orkiestrator (Opus 5.5), **H** = Claude subag
 | **R-A** Review milestone A | Lista uwag i niespełnionych AC dla etapu 1 bez modeli | AC-01–AC-16, AC-21, AC-24–AC-26 | T4.5 | CS (`codex exec review` względem `63974fe`, §3) + O | — (uwagi do `.agent-briefs/out/R-A.md` przez `-o`) | O klasyfikuje uwagi; poprawki jako osobne zadania T4.x-fix |
 | **T5.1** Kontrakt `store` (SQLite) | Schemat: decyzje, cache, budżet, runy; migracja idempotentna | ADR-000 §5.2, D-05; ADR-003 §3.2, D-303; ADR-002 §4.8–4.9 | T4.5 | O (kontrakt współdzielony przez vision i dashboard) | `src/map_qa/store.py`, `tests/unit/test_store.py` | Red→Green; commit `App: SQLite store` |
 | **T5.2** Weryfikacja SDK `openrouter==1.3.107` | Wynik ze źródłami: retry `none`, `timeout_ms` w `decisions.create`, argumenty klienta | ADR-002 §2 „Do potwierdzenia”, ADR-000 D-03; plan.md Ryzyka | T1.1 | CL (research: Context7 → kod SDK) | `.agent-briefs/out/T5.2.md` (CL); tabelę w ADR-002 §2 aktualizuje O (`docs/ADR/*` = hotspot O) | O weryfikuje źródła i nanosi wynik do ADR-002 §2; brak timeoutu → G-ARCH: proponowany ADR dla surowego POST |
-| **T5.3** Red: `vision` (transport testowy) | Testy budżetu, limitu 0, cache, abstencji, treści `state`, wyłączenia modelu po błędzie | AC-17–AC-20f, AC-22; ADR-002 §3–4, §8, D-201–D-204; TAC-002-01/02 | T5.1, T5.2 | H | `tests/unit/test_vision_*.py`, `tests/integration/test_vision_cascade.py` | Testy zależne od kształtu odpowiedzi API **pominięte z powodem „brak capture”** (ADR-002 §4.5); O potwierdza Red |
+| **T5.2b** Capture prawdziwych żądań i odpowiedzi | Dla każdej pary (endpoint, model): Decisions + `typesafe/jev-1.14` (główny), Decisions + `openai/gpt-6-luna-decisions` (porównawczy), chat + `openai/gpt-6-luna` (drugi stopień) — 1 prawdziwe żądanie z 1 zdjęciem z `offline/` i 1 pytaniem; plus 1 capture błędu (np. niepoprawne `criteria` → 400). Wyłącznie endpointy OpenRouter i `OPENROUTER_API_KEY` z zmiennej użytkownika (ADR-002 §2 „Kontrakt połączenia”); capture zapisuje URL endpointu. Zapis verbatim: status, nagłówki z listy dozwolonej, pełne ciało, struktura/typy pól, żądanie z obrazem zastąpionym `sha256`, data, wersja SDK | ADR-002 §4.2–4.5, D-202; ADR-000 TAC-04, TAC-002-02/04; zasada mocków §2 | T5.2 | O (sekret w środowisku, płatne wywołanie, hotspot fixtures) | `tests/fixtures/captures/*.json`, `scripts/capture_openrouter.py` (jednorazowy skrypt, bez retry, timeout 40 s) | Skan capture na `authorization`, `sk-or-`, wartość klucza, `base64,` → 0 trafień; koszt z `usage.cost` dopisany do trackera; commit `Test: real OpenRouter captures` |
+| **T5.3** Red: `vision` (transport testowy z capture) | Testy budżetu, limitu 0, cache, abstencji, treści `state`, wyłączenia modelu po błędzie; mocki **wyłącznie** z ciał T5.2b, każdy wskazuje plik capture | AC-17–AC-20f, AC-22; ADR-002 §3–4, §8, D-201–D-204; TAC-002-01/02/04 | T5.1, T5.2b | H | `tests/unit/test_vision_*.py`, `tests/integration/test_vision_cascade.py` | O potwierdza Red i to, że żaden mock nie ma pól spoza capture |
 | **T5.4** Green: `vision` | Domyślnie 0 żądań i brak manifestu; regresja: `--decision-limit 2 --max-cost-usd 0` → kod 2 (walidacja z T1.3, bez zmian w `cli.py`) | jw. | T5.3 | **CS** | `src/map_qa/vision.py`, `config/thresholds.toml` (właściciel pliku tylko w tym zadaniu) | Testy zielone; realny CLI bez limitów → 0 żądań, brak manifestu; commit `App: vision cascade, budget and cache (no paid calls)` |
 | **T5.5** `evaluation` | Trafność i pokrycie tylko na `certain`, podział po `sequence` | AC-23; ADR-002 §4.10 | T5.1 (równolegle z T5.3–T5.4) | CL | `src/map_qa/evaluation.py`, `tests/unit/test_evaluation.py` | Red→Green; commit `App: reading evaluation` |
 | **T5.6** Integracja vision w `cli` + raport | Raport pokazuje stopień odczytu i `model_unavailable` | AC-20e, AC-20f, AC-21 | T5.4, T5.5 | O | `src/map_qa/cli.py`, `src/map_qa/templates/*` (sekcja vision) | Pełny pytest + realny CLI; commit `App: vision results in report` |
-| **T6** Próba płatna z przydziałem | Capture → mocki z capture → odblokowane testy; raport kosztu | AC-19–AC-23 na realnym API; ADR-002 §4.5, §4.7 | T5.6 + **G-PAID** | O | `tests/fixtures/captures/*`, testy odblokowane | Wg [plan.md §6](../plan.md#6-próba-z-przydziałem); **pomijane w trybie autonomicznym** |
+| **T6** E2E i próba na prawdziwym API | `tests/e2e/test_vision_live.py` (marker `live`, **bez mocków**) + rzeczywisty run `uv run map-qa check --stage 1 --decision-limit 25 --comparison-limit 5 --fallback-limit 10 --max-cost-usd 1`: liczba żądań na model ≤ limitów, koszt w raporcie, ponowny run = 0 nowych żądań (cache) | AC-17–AC-23 na realnym API; ADR-002 §4.7–4.10, §8 (wiersz „Rzeczywista próba”); TAC-002-01/03 | T5.6 + G-PAID (rozstrzygnięte, ≤ 1 USD) | O | `tests/e2e/test_vision_live.py`, `config/thresholds.toml` (tylko commit progów przed próbą, AC-20a) | Manual QA: ręcznie obejrzane wszystkie niezgodności z etykietami; drugi run bez nowych żądań; koszt łączny w trackerze; commit `App: live decision trial with captures` |
 | **T7.1** Red: etap 2 (oświetlenie, skrzyżowanie) | Testy `lit`, topologii `node_ids`, most/tunel/granica → `not_comparable`; run etapu 2 zawiera też pary etapu 1 (P4) | AC-32; ADR-001 §3.5, §4.4; ADR-000 §6 | T4.5, T5.6 | H | `tests/unit/test_stage2_*.py` | O potwierdza Red |
 | **T7.2** Green: etap 2 w `normalize`/`compare` | Testy jednostkowe T7.1 zielone; pytania etapu 2 w `questions_version` **1** (ADR-002 §4.1, P5) | jw.; ADR-002 §4.1 | T7.1 | CL (normalize/compare) — **serialnie**, bo edytuje pliki z T2/T4 | `src/map_qa/normalize.py`, `compare.py`, `config/thresholds.toml` (właściciel pliku tylko w tym zadaniu) | Testy zielone; commit `App: lighting and junction checks` |
 | **T7.3** Integracja `--stage 2` w `cli` | `uv run map-qa check --stage 2` → kod 0; raport z atrybutami etapów 1 i 2; próbka vision obejmuje pytania etapu 2 przy limicie > 0 (na transporcie testowym) | AC-32; ADR-000 §6; ADR-002 §4.7 | T7.2 | O | `src/map_qa/cli.py`, `src/map_qa/vision.py` (tylko wybór pytań etapu), `tests/e2e/test_stage2_cli.py` | Pełny pytest + realny CLI; ręcznie 1 węzeł skrzyżowania; commit `App: stage 2 end-to-end` |
 | **T8.1** Decyzja wizualna | `docs/design-guidelines.md` albo zapis „domyślny motyw Streamlit” | AGENTS.md Manual QA pkt 5; **G-DESIGN** | — | Człowiek / O | `docs/design-guidelines.md` | Zgoda użytkownika lub wpis o pominięciu |
 | **T8.2** Red: dashboard (logika + E2E) | Testy filtrów (etap = etap atrybutu, P4), zapisu decyzji, zakładki „Do poprawy”, atrybucji zdjęć, stopnia odczytu, braku etykiety „błąd mapy” bez decyzji, braku żądań zewnętrznych | AC-14, AC-20f, AC-25, AC-27–AC-30; ADR-003 §3.2–3.3, §8; TAC-003-02/03 | T5.1, T4.5 (równolegle z T7.x — rozłączne pliki) | H | `tests/unit/test_dashboard_logic.py`, `tests/e2e/test_dashboard.*` | O potwierdza Red; weryfikacja dostępności Playwright CLI (`npx @playwright/cli --help`) |
 | **T8.3** Green: dashboard Streamlit | Działający `streamlit run dashboard/app.py`, polskie teksty | jw.; ADR-000 D-06, ADR-003 D-302 | T8.1, T8.2 | OC | `dashboard/app.py`, `.streamlit/config.toml` | Testy zielone; **Manual QA Playwright**: zrzuty obu zakładek, restart serwera i trwałość decyzji, konsola bez błędów; commit `App: Streamlit review dashboard` |
-| **R-F** Review końcowy | Lista niespełnionych AC 01–33 i TAC; raport z tym, czego nie zweryfikowano (np. T6) | AC-31–AC-33 | T7.3, T8.3 (T6 opcjonalnie) | CS (`codex exec review` względem `63974fe`, §3) + świeża sesja Claude bez kontekstu implementacji + **człowiek** | — | Uwagi → zadania fix; potem G-PUB |
+| **R-F** Review końcowy | Lista niespełnionych AC 01–33 i TAC; raport z tym, czego nie zweryfikowano | AC-31–AC-33 | T6, T7.3, T8.3 | CS (`codex exec review` względem `63974fe`, §3) + świeża sesja Claude bez kontekstu implementacji + **człowiek** | — | Uwagi → zadania fix; potem G-PUB |
 | **T9** Pull request | PR `map-app-implementation` → `main` w `origin` (fork) | — | R-F + **G-PUB** | O | — | `gh pr create -R marciniaklukasz/jsystems-claude-codex-gis-2026-11 --base main`; opis z listą AC i dowodami |
 
 ## 6. Ścieżka krytyczna i równoległość
 
-**Ścieżka krytyczna:** T0.1 → T0.2 → T1.1 → T1.2 → T1.3 → T1.4 → T3.1 → T3.2 → T4.1 → T4.2 → T4.3 → T4.5 → T5.1 → T5.3 → T5.4 → T5.6 → T7.1 → T7.2 → T7.3 → R-F → T9.
+**Ścieżka krytyczna:** T0.1 → T0.2 → T1.1 → T1.2 → T1.3 → T1.4 → T3.1 → T3.2 → T4.1 → T4.2 → T4.3 → T4.5 → T5.1 → T5.3 → T5.4 → T5.6 → T6 → T7.1 → T7.2 → T7.3 → R-F → T9.
 (T3 jest na ścieżce zamiast T2, bo `matching` jest trudniejszy i przydzielony Sol.)
 
 **Okna równoległe (rozłączne pliki, jeden checkout, bez worktree):**
 - T2.1‖T3.1, potem T2.2‖T3.2.
 - T4.4 równolegle z T4.1–T4.3.
-- T5.2 (research) od razu po T1.1; T5.5 równolegle z T5.3–T5.4.
+- T5.2 (research) od razu po T1.1, potem T5.2b (capture, O) — musi być przed T5.3; T5.5 równolegle z T5.3–T5.4.
 - T8.1–T8.3 równolegle z T7.x po T5.1.
 
 Każdy brief zawiera sekcję „Równolegle pracują: …, nie dotykaj ich plików”.
@@ -160,7 +163,7 @@ Gdy użytkownik ustawi taki cel, obowiązuje ta sama macierz, z różnicami:
 1. Orkiestrator nie czeka na przegląd po każdym zadaniu, ale **nie omija** Red→Green, weryfikacji ani bramek z §4.
 2. Briefy kompilowane tuż przed wysłaniem do `.agent-briefs/<task>.md` (commitowane razem z wynikiem zadania).
 3. Po każdym milestone (A: T4.5, B: T5.6, C: T7.3, D: T8.3) wpis statusu w [docs/plan.md](../plan.md) i krótkie podsumowanie w rozmowie.
-4. G-PAID → pominięcie T6; G-DESIGN → domyślny motyw; G-PUB → tylko gdy cel wprost zezwala; G-ARCH → proponowany ADR i kontynuacja niezależnych wątków.
+4. G-PAID → rozstrzygnięte (przydział ≤ 1 USD, T5.2b i T6 wykonywane; stop przy 0,80 USD); G-DESIGN → domyślny motyw; G-PUB → tylko gdy cel wprost zezwala; G-ARCH → proponowany ADR i kontynuacja niezależnych wątków.
 5. Koniec = R-F z jawną listą tego, co zweryfikowano, a czego nie.
 6. **Kryterium zakończenia celu (Definition of Done, polecenie prowadzącego):**
    > *Check the quality of the implementation, compliance with all ADR and PRD documents, and whether the application itself works before you consider the plan implemented.*

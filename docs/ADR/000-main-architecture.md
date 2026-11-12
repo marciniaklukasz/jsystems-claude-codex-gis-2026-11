@@ -108,7 +108,8 @@ Kierunek zależności: `cli` → (`ingest`, `matching`, `compare`, `vision`, `ev
 | `store` | Schemat SQLite i operacje: decyzje, cache, budżet, runy | — |
 | `sources_remote` | Opcjonalne liczności z Databricks | `config` |
 | `cli` | Komendy i kody wyjścia | wszystkie powyżej |
-| `dashboard/app.py` | UI Streamlit | `store`, `config` |
+| `dashboard_data` | Logika dashboardu bez Streamlit: wybór runu, filtry, tabele, szczegóły (testowalna jednostkowo; dodane 2026-11-12) | `store`, `config`, `compare` (stałe etykiet) |
+| `dashboard/app.py` | UI Streamlit | `dashboard_data`, `store`, `config` |
 
 ---
 
@@ -139,7 +140,7 @@ Kierunek zależności: `cli` → (`ingest`, `matching`, `compare`, `vision`, `ev
 ### CLI `map-qa check`
 - **Wejście:** `--stage {1,2}` (wymagane; etap 2 jest nadzbiorem etapu 1: prędkość, nawierzchnia, oświetlenie, skrzyżowanie — decyzja 2026-11-12, P4), `--decision-limit N` (domyślnie 0, maks. 25), `--comparison-limit N` (domyślnie 0, maks. 5), `--fallback-limit N` (domyślnie 0, maks. 10), `--max-cost-usd X` (domyślnie 0), `--out` (domyślnie `<repo>/reports/map-qa/runs/`), `--data-dir` (domyślnie `<repo>/course-materials/exercise-data/map-qa/`), `--db` (domyślnie `<repo>/course-materials/exercise-data/map-qa/data/map_qa.db`). `--data-dir` i `--db` służą testom (kopia danych, SQLite w `tmp_path`); `<repo>` = korzeń repozytorium (§3, P7).
 - **Walidacja:** limit powyżej maksimum lub limit > 0 przy `--max-cost-usd 0` → kod 2 i komunikat po polsku, przed wczytaniem danych.
-- **Wyjście:** katalog runu z `report.md`, `report.html`, `candidates.csv`, `candidates.parquet`, `readings.parquet`, `sample_manifest.csv` (gdy limit > 0), `run.json`; podsumowanie na stdout. Raport zawsze ma sekcję „Ograniczenia” z wpisem „Databricks: nie odpytywany w kontroli (D-02)” i stanem OpenRouter (brak budżetu, brak klucza albo błąd) — AC-05.
+- **Wyjście:** katalog runu z `report.md`, `report.html`, `candidates.csv`, `candidates.parquet`, `readings.parquet`, `links.parquet` (`LinkAssessment`, uzupełnienie 2026-11-12 po review R-A), `sample_manifest.csv` (gdy limit > 0), `run.json`; podsumowanie na stdout. Raport zawsze ma sekcję „Ograniczenia” z wpisem „Databricks: nie odpytywany w kontroli (D-02)” i stanem OpenRouter (brak budżetu, brak klucza albo błąd) — AC-05.
 - **Kody wyjścia:** 0 sukces (także bez modelu i przy niedostępnych źródłach opcjonalnych), 1 niezgodny hash lub brak pliku wejściowego (także przy kontroli hashy po runie, AC-01), 2 błędne argumenty, 3 nieoczekiwany błąd. Przy kodzie ≠ 0 katalog runu nie zawiera raportu: raport powstaje w plikach tymczasowych, końcowa kontrola hashy wejść odbywa się przed zmianą ich nazw (ADR-003 §5).
 
 ### CLI `map-qa compare-counts`
@@ -342,6 +343,7 @@ TDD dla każdego etapu planu: test z kryterium PRD → uruchomienie i oczekiwane
 ---
 
 ## 11. Otwarte kwestie
+- **Implementacja 2026-11-12 (plan orkiestracji):** run zapisuje się w SQLite (`runs`) przed zmianą nazwy katalogu `.partial` → `<run_id>`; błąd zapisu daje kod 3 bez opublikowanego raportu (review R-A). Dashboard przyjmuje ścieżki jako argumenty skryptu: `uv run streamlit run dashboard/app.py -- --runs-dir <katalog> --db <plik>` (domyślnie jak w §6).
 - **Hash a CRLF (rozwiązane 2026-11-12; wcześniej blokowało krok 1):** przy `core.autocrlf=true` pliki CSV/GeoJSON w kopii roboczej mają CRLF i SHA-256 niezgodny z `sources.json` (blob w Git jest zgodny). Wybrano (2026-11-12, plan krok 0c) regułę `course-materials/exercise-data/** -text` w `.gitattributes` i ponowny checkout; odrzucono normalizację końców linii w `ingest`. Wykonane 2026-11-12: 8/8 plików zgodnych z `sources.json`.
 - ~~Porównanie liczności z Databricks~~ — wykonane 2026-11-12 (profil, „Pliki lokalne a Databricks”): 99 768 / 85 405 / 561 / 561 / 1 730, wszystkie zgodne. Geometria w tabelach to WKB bez SRID; `compare-counts` porównuje tylko liczności, więc D-02 bez zmian.
 - Potwierdzić w SDK `timeout_ms` dla `decisions.create` i nazwy argumentów klienta (D-03).

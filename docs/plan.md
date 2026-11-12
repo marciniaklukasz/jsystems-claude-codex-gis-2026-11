@@ -138,6 +138,26 @@ Wszystko z PRD §7, w tym edycja OSM, praca wielu użytkowników, trening modeli
 | Próbka 25 par | Brak wniosków o modelach | Raport podaje liczności; bez porównań statystycznych |
 | Dwa agenty w jednym pliku | Konflikty | Rozłączne „Editable files” i hotspoty z jednym właścicielem (plan orkiestracji §5–§7), jeden checkout |
 
+## Status wykonania (2026-11-12, plan orkiestracji)
+
+| Krok | Status | Wykonawca (faktyczny) | Dowód |
+|---|---|---|---|
+| T0.1–T0.2 | ✅ | O; smoke CL/CS/OC/H | `8e6a1b7`; Codex sandbox blokuje `.git/`; OC brak wyjścia headless → zadania OC do CL; H próbował `git commit` mimo zakazu (zablokował klasyfikator) |
+| 1 (T1.1–T1.4) | ✅ | O (testy, fixtures), CL (Green) | `91e4702`, `3f7914d`, `3503251` |
+| 2 (T2.1–T2.2) | ✅ | O (testy), CL | `00d79e3`; O dodał obsługę numpy z Parquet |
+| 3 (T3.1–T3.2) | ✅ | O (testy), CS | `8190121`; 434/124/3, mismatch 0% |
+| 4 (T4.1–T4.5) | ✅ | O (`compare`, `cli`), CL (`report`, `sources_remote`) | `e130c85`, `fab3dd8`, `8050638`, `985ba4f`; capture Databricks |
+| R-A | ✅ | CS review + O | 3 uwagi P2 naprawione w `0bce4ac` |
+| 5 (T5.1–T5.6) | ✅ | O (`store`, testy vision, capture, integracja), CL (research SDK, `evaluation`), CS (`vision`) | `3fda90a`, `bfec839`, `353c042`, `a13e58e`, `f67a99c`, `7ef7693` |
+| 6 (T6) | ✅ | O | `70bcff2`; E2E `live` 4/4; próba 40 żądań, 0,006367 USD; drugi run 0 żądań |
+| 7 (T7.1–T7.3) | ✅ | O | `c26e6db`, `0cd26da`; logika etapu 2 powstała w T4.2 (testy T7 bez fazy Red) |
+| 8 (T8.1–T8.3) | ✅ kod, Manual QA w toku | O (testy, decyzja wizualna), CL (dashboard) | `52902d4`, `b73d1c8` |
+| 9 (R-F, T9) | w toku | — | — |
+
+**Koszt płatnych wywołań (przydział ≤ 1 USD):** capture T5.2b 0,00034 USD; E2E `live` ≈ 0,0005 USD; próba T6 0,006367 USD; łącznie ≈ **0,0072 USD**.
+
+**Eskalacje i odstępstwa:** `compare` i testy T1.2/T2.1/T3.1/T4.1/T5.3/T7.1/T8.2 napisał O zamiast H (kontrakty współdzielone; H nie respektował zakazu Git w smoke teście). Zadania OC (T4.3, T8.3) wykonał CL. Worker T5.4 (CS) wykrył 2 błędne oczekiwania w testach O (koszt BYOK, rezerwa) — poprawione testy, nie logika. Push na `origin` po milestone zablokowany przez klasyfikator uprawnień — wymaga decyzji człowieka.
+
 ## Pierwsza czynność
 ~~Krok 0c~~ — wykonany 2026-11-12. Następna czynność: T0.1 z planu orkiestracji.
 

@@ -83,6 +83,8 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Bez `session_id`, `user`, `trace`.
 - Wywołanie: retry strategii `none`, timeout 40 s.
 
+**Potwierdzone capture T5.2b (2026-11-12):** `state` = [część tekstowa, część `image_url` z data URL JPEG] jest przyjmowany przez Jev i Luna Decisions (HTTP 200); niepoprawne `criteria` (pusty słownik) → HTTP 422 (nie 400). Pytanie `choice` w SDK: `{"type": "choice", "instructions", "criteria": {opcja: opis}}`.
+
 ### 4.3. Odpowiedź i interpretacja
 - Odczyt: `answers[question_id].choice`, `.probabilities`, `.confidence`; `usage.cost`.
 - **Pewny** odczyt modelu głównego: `choice` ∈ opcje, `choice` ≠ `unknown`, max(`probabilities`) ≥ próg `abstain_threshold` (start 0,7, AC-20a) i połączenie zdjęcia pewne (ADR-001 §3.4).
@@ -96,6 +98,8 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - **Pewny** odczyt: poprawny JSON, `answer` ∈ opcje, ≠ `unknown`. Niepewność sygnalizuje wyłącznie `unknown` — bez samooceny liczbowej.
 - `unknown` → kolejka ręczna, przyczyna `abstain`. Pusta lub ucięta odpowiedź, JSON niezgodny ze schematem, błąd, timeout, brak limitu → `model_unavailable` (AC-20d). Pewna odpowiedź nie usuwa `ambiguous_link` (PRD AC-07).
 - Każdy niepewny odczyt eskaluje najwyżej raz (AC-20b).
+- Niepoprawna treść odpowiedzi drugiego stopnia (zły JSON, odpowiedź spoza listy) → `model_unavailable` dla tej pary, **bez** wyłączania modelu; model wyłącza tylko błąd żądania (HTTP, timeout, wyjątek SDK) — AC-20 (doprecyzowanie 2026-11-12).
+- Zdjęcia `signs/` bez pary z mapą (`evaluation_only`) nie mają warunku połączenia w AC-20a (brak połączenia ≠ połączenie niepewne).
 
 ### 4.5. Capture i mock
 - Pierwsze rzeczywiste żądanie dla każdej pary (endpoint, model) — osobne zadanie capture przed implementacją `vision` (plan orkiestracji T5.2b; przydział prowadzącego 2026-11-12) — jest zapisywane w `app/tests/fixtures/captures/<data>_<model>.json` **zanim** powstanie jakikolwiek mock.
@@ -123,6 +127,8 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Odmowa budżetu → odczyt `model_unavailable`, bez żądania.
 - Cache hit nie zwiększa licznika.
 
+**Uzupełnienie po capture T5.2b (2026-11-12):** konto OpenRouter działa w trybie BYOK — `usage.cost` bywa 0, a rzeczywisty koszt jest w `usage.cost_details.upstream_inference_cost`. Koszt żądania liczony jako `max(usage.cost, upstream_inference_cost)`; brak obu → `reserve`. Rezerwa wchodzi tylko do sprawdzenia przed żądaniem i zastępuje koszt wyłącznie przy jego braku.
+
 ### 4.9. Cache
 - Klucz: `image_sha256` + `model` + `question_id` + `questions_version` (AC-22). Wartość: znormalizowany odczyt i pełne ciało odpowiedzi bez sekretów.
 - Zapisywane są tylko odpowiedzi poprawne (także `unknown` i niepewne); błędów nie cache'ujemy.
@@ -130,6 +136,8 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 ### 4.10. Ewaluacja (`evaluation`)
 - Dla każdego pytania i podziału: liczba par, pokrycie = pewne odczyty / pary, trafność = poprawne pewne odczyty / pewne odczyty, osobno dla modelu głównego, po eskalacji i dla modelu porównawczego.
 - Raport zawiera liczbę wykluczonych etykiet `uncertain` (AC-23) i liczbę odczytów rozstrzygniętych przez każdy stopień (AC-20e).
+- Model porównawczy: pokrycie i trafność liczone tylko na parach, które faktycznie dostał; ponowny run z cache odtwarza jego odczyty bez żądań (2026-11-12).
+- **Próba 2026-11-12 (T6):** limity 25/5/10, 40 żądań, 0 błędów, 0,006367 USD; ponowny run 0 żądań. Prędkość: pokrycie 1,0, trafność 0,769 (próg 0,8 niespełniony; 2 z 3 niezgodności to etykiety z wycinka znaku innego niż B-33, a na pełnym kadrze widać inny znak B-33 — ryzyko z PRD §12); nawierzchnia: pokrycie 1,0, trafność 1,0. Progi nie zostały zmienione po próbie (AC-23).
 - Progi akceptacji zapisane w `thresholds.toml` i zatwierdzone commitem przed runem z przydziałem; raport zapisuje hash commitu pliku progów.
 
 ---

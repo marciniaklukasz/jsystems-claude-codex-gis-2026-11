@@ -36,6 +36,8 @@ Z dokumentacji Streamlit: `st.data_editor` nie ma zaznaczania wierszy — wybór
 - Odnośnik OSM: `https://www.openstreetmap.org/way/<osm_id>`.
 - Teksty po polsku; identyfikatory i surowe tagi bez tłumaczenia.
 - HTML: jeden plik, bez zewnętrznych skryptów i fontów; wszystkie wartości z danych przez autoescape (tagi OSM są niezaufanym tekstem).
+- MD: każda dynamiczna komórka tabeli escapuje `|` i nowe linie (filtr `mdcell`; wartości surowe bez zmian w Parquet i CSV) — review R-A, np. `maxspeed:lanes=120|120|120|80`.
+- Miniatura na innym dysku niż katalog runu (Windows) → absolutny URI `file:///`.
 
 ### 3.2. Zapis decyzji (`store`)
 - Tabela `decisions`: `candidate_key` (osm_id, overture_ids posortowane, atrybut) jako klucz główny, `decision` ∈ {`confirmed_error`, `no_error`, `uncertain`}, `proposed_value?`, `comment`, `author`, `decided_at` (UTC ISO 8601), `run_id`.
@@ -48,6 +50,7 @@ Z dokumentacji Streamlit: `st.data_editor` nie ma zaznaczania wierszy — wybór
 - Wczytuje najnowszy katalog z `<repo>/reports/map-qa/runs/` (po `run_id`; ścieżka względem korzenia repozytorium, ADR-000 §3) i decyzje z SQLite. Run etapu 2 jest nadzbiorem etapu 1, więc najnowszy run `--stage 2` pokazuje wyniki obu etapów (AC-33); filtr „etap” działa na etapie atrybutu (prędkość, nawierzchnia → 1; oświetlenie, skrzyżowanie → 2) (decyzja 2026-11-12, P4).
 - Pole „Autor” na pasku bocznym, zapamiętane w stanie sesji; wymagane przed zapisem decyzji.
 - **Zakładka „Przegląd”:** filtry atrybut / kategoria / etap / przyczyna; licznik pozycji; tabela `st.dataframe` z zaznaczeniem jednego wiersza; panel szczegółów (wartości obu źródeł z datami, zdjęcie z atrybucją, stan połączenia, odczyt i stopień lub „brak odczytu modelu”, przyczyny); formularz: decyzja (3 opcje), wartość proponowana, komentarz, „Zapisz”.
+- Wybór kandydata: zaznaczenie wiersza w `st.dataframe` ustawia również `st.selectbox` „Wybierz kandydata” (dostęp z klawiatury i testy `AppTest`); decyzja przez zwykłe widgety (bez `st.form`), żeby treść została po błędzie walidacji; komunikat sukcesu przez `session_state` przetrwa `st.rerun()` (2026-11-12).
 - **Zakładka „Do poprawy”:** tylko `confirmed_error`; kolumny: odnośnik OSM, obecna wartość, wartość proponowana, zdjęcie z atrybucją, komentarz, autor, czas. Tylko odczyt.
 - Stany: brak runów → „Brak wyników kontroli — uruchom kontrolę z wiersza poleceń”; brak potwierdzonych → „Brak potwierdzonych przypadków”; błąd zapisu → komunikat, wpisana treść zostaje w formularzu.
 - Dashboard nie wykonuje żadnych żądań sieciowych poza serwerem lokalnym (AC-30): zdjęcia tylko z plików lokalnych.

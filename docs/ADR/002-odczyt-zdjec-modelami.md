@@ -25,6 +25,21 @@ Moduły `vision` i `evaluation`: wybór próbki, przygotowanie obrazu, kontrakt 
 
 **Do potwierdzenia przed kodem (nie zgadywać):** `timeout_ms` w `alpha.decisions.create`; nazwy argumentów konstruktora `OpenRouter`; położenie `provider.require_parameters` w `chat.send`; czy chat zwraca `usage.cost`; czy SDK udostępnia nagłówki odpowiedzi.
 
+**Wynik weryfikacji SDK 1.3.107 (T5.2, 2026-11-12, kod zainstalowanego pakietu):**
+
+| Pytanie | Wynik | Źródło |
+|---|---|---|
+| Konstruktor | `OpenRouter(api_key=, server_url=, client=, retry_config=, timeout_ms=)`; domyślny serwer `https://openrouter.ai/api/v1` | `openrouter/sdk.py`, `sdkconfiguration.py` |
+| Retry | `RetryConfig("none", BackoffStrategy(...), False)`; per wywołanie `retries=`; domyślnie backoff do 1 h z ponawianiem błędów połączenia | `openrouter/utils/retries.py`, `decisions.py` |
+| `timeout_ms` w `alpha.decisions.create` | **potwierdzony**, per wywołanie — D-03 bez zmian (surowy POST niepotrzebny) | `openrouter/decisions.py` |
+| Pytanie `choice` | `{"type": "choice", "instructions": <tekst>, "criteria": {<opcja>: <opis lub null>}}` — opcje to klucze `criteria` | `components/decisionschoicequestion.py` |
+| Obraz w Decisions | `state` = dowolny JSON (tekst, obiekt, lista); obraz jako część `image_url` albo przez mapę `assets` (`data_base64` bez prefiksu, `format`) z referencją w `state` | `components/decisionsrequest.py`, `decisionsimageasset.py` |
+| Odpowiedź | `answers[qid].choice`, `.probabilities`, `.confidence`; `usage.cost` opcjonalne | `components/decisionsresponse.py`, `decisionschoiceanswer.py` |
+| Chat | `chat.send(model, messages, reasoning, response_format, max_tokens, provider, retries, timeout_ms)`; `provider.require_parameters` w `ProviderPreferences`; `stream` domyślnie `False`; `usage.cost` opcjonalne | `openrouter/chat.py`, `components/chatrequest.py`, `providerpreferences.py`, `chatusage.py` |
+| Nagłówki odpowiedzi | Metody zwracają model Pydantic bez nagłówków; dostęp przez własny `httpx.Client` (event hooks) przekazany jako `client=` | `openrouter/httpclient.py` |
+| Transport testowy | `OpenRouter(client=httpx.Client(transport=httpx.MockTransport(...)))` — bez sieci | `openrouter/httpclient.py` |
+| Błędy | klasy per status w `openrouter.errors` (np. `BadRequestResponseError`, `ServiceUnavailableResponseError`); timeout/połączenie = wyjątki `httpx` | `openrouter/decisions.py`, `errors/__init__.py` |
+
 **Kontrakt połączenia (uzupełnienie 2026-11-12, decyzja użytkownika):** wszystkie trzy modele (`openai/gpt-6-luna-decisions`, `typesafe/jev-1.14`, `openai/gpt-6-luna`) są wywoływane **wyłącznie przez OpenRouter**: Decisions → `https://openrouter.ai/api/alpha/decisions`, chat → `https://openrouter.ai/api/v1/chat/completions` (przez SDK `openrouter`, domyślny serwer SDK; `server_url` nie jest konfigurowalny z CLI ani `thresholds.toml`). Jedynym kluczem jest `OPENROUTER_API_KEY` czytany z `os.environ` (zmienna ustawiona na poziomie użytkownika); aplikacja nie czyta `.env`, nie używa `OPENAI_API_KEY` ani klienta OpenAI. Test jednostkowy sprawdza, że skonfigurowany klient wskazuje host `openrouter.ai`, a capture (§4.5) zapisuje rzeczywisty URL endpointu.
 
 ---

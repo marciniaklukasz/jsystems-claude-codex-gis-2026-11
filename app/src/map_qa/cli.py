@@ -169,6 +169,8 @@ def check(stage: int, limits: Limits, out_dir: Path, data_dir: Path, db_path: Pa
             "usage": vision_result["usage"], "cost_total_usd": vision_result["cost_total_usd"], "requests_total": vision_result["requests_total"],
             "vision_summary": vision_result["vision_summary"], "evaluation": vision_result["evaluation"],
             "comparison": vision_result.get("comparison", []),
+            "evaluation_thresholds": {"min_coverage": th["evaluation"]["min_coverage"], "min_accuracy": th["evaluation"]["min_accuracy"],
+                                      "met": vision_result.get("evaluation_thresholds_met", {})},
             "photo_attribution": attribution, "summary": summary,
         }
         cand.to_parquet(partial / "candidates.parquet")
@@ -212,18 +214,31 @@ def check(stage: int, limits: Limits, out_dir: Path, data_dir: Path, db_path: Pa
 
 
 def _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, run_dir) -> dict:
-    """Bez budżetu: zero żądań, brak manifestu (AC-19b, AC-21). Pełna kaskada: moduł `vision` (T5.6)."""
-    try:
-        from map_qa import vision
-    except ImportError:
-        vision = None
-    if vision is None or not limits.any_positive():
-        state = "brak budżetu (limity 0) — nie wysłano żadnego żądania; pary ze zdjęciem jako jedynym dowodem: model_unavailable"
-        return {"readings": pd.DataFrame(columns=["photo_id", "question_id", "final_stage", "model", "answer", "status", "reason"]),
-                "usage": {}, "cost_total_usd": 0.0, "requests_total": 0, "vision_summary": {}, "evaluation": {},
-                "openrouter_state": state}
-    return vision.run_vision(conn, run_id=run_id, stage=stage, limits=limits, th=th, layers=layers,
-                             assessment=assessment, data_dir=data_dir, run_dir=run_dir)
+    """Bez budżetu: zero żądań, brak manifestu (AC-19b, AC-21). Z limitem: próbka, kaskada, ewaluacja (ADR-002)."""
+    from map_qa import evaluation, vision
+
+    if not limits.any_positive():
+        result = vision.run_vision(conn, run_id=run_id, stage=stage, limits=limits, th=th, layers=layers,
+                                   assessment=assessment, data_dir=data_dir, run_dir=run_dir, labels=None)
+        result["openrouter_state"] = ("brak budżetu (limity 0) — nie wysłano żadnego żądania; "
+                                      "pary ze zdjęciem jako jedynym dowodem: model_unavailable")
+        result["evaluation"] = {}
+        return result
+    labels = evaluation.load_labels(data_dir)
+    signs = pd.read_csv(data_dir / "signs" / "signs.csv", encoding="utf-8")
+    nearest = pd.read_csv(data_dir / "signs" / "nearest_osm.csv", dtype=str, keep_default_na=False, encoding="utf-8")
+    osm2180 = layers.osm[["osm_id", "highway", "access", "motor_vehicle", "geometry"]].to_crs(2180)
+    sign_links = matching.assess_sign_links(nearest, signs, osm2180, th["links"])
+    _log(f"Odczyt zdjęć modelami: limity {limits.decision}/{limits.comparison}/{limits.fallback}, maks. koszt {limits.max_cost_usd} USD")
+    result = vision.run_vision(conn, run_id=run_id, stage=stage, limits=limits, th=th, layers=layers,
+                               assessment=assessment, data_dir=data_dir, run_dir=run_dir, labels=labels,
+                               sign_links=sign_links)
+    comparison = pd.DataFrame(result.get("comparison") or [])
+    ev = evaluation.evaluate(result["readings"], labels, comparison if len(comparison) else None)
+    result["evaluation"] = ev
+    result["evaluation_thresholds_met"] = evaluation.thresholds_met(ev, th)
+    _log(f"Żądania do modeli: {result['requests_total']}, koszt {result['cost_total_usd']:.6f} USD")
+    return result
 
 
 # --- compare-counts ------------------------------------------------------------------------

@@ -40,12 +40,13 @@ Pewne: {{ link_counts.certain or 0 }}; niepewne: {{ link_counts.uncertain or 0 }
 {% for model, usage in run.usage.items() %}| {{ model }} | {{ usage.sent }} | {{ usage.errors }} | {{ "%.4f"|format(usage.cost_usd) }} |
 {% endfor %}
 Łączny koszt: {{ "%.4f"|format(run.cost_total_usd) }} USD; liczba żądań: {{ run.requests_total }}.
-
+{% else %}Brak wywołań modelu w tej kontroli.
+{% endif %}
+{% if run.vision_summary %}
 | pytanie | model decyzyjny | drugi stopień | kolejka ręczna | razem |
 |---|---:|---:|---:|---:|
 {% for question, counts in run.vision_summary.items() %}| {{ question }} | {{ counts.decision }} | {{ counts.fallback }} | {{ counts.manual }} | {{ counts.total }} |
-{% endfor %}{% else %}Brak wywołań modelu w tej kontroli.
-{% endif %}
+{% endfor %}{% endif %}
 ## Ewaluacja
 
 {% if run.evaluation %}{% for question, evaluation in run.evaluation.items() %}### {{ question }}

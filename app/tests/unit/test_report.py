@@ -260,3 +260,12 @@ def test_link_details_shown(tmp_path):  # R-A: LinkAssessment przy kandydacie
     paths = report.write_report(make_run(tmp_path, [c]))
     for fmt in ("md", "html"):
         assert "różnica kierunku 87.9°" in paths[fmt].read_text(encoding="utf-8")
+
+
+def test_vision_summary_shown_even_without_requests(tmp_path):  # AC-20e: brak klucza → wszystkie w kolejce ręcznej
+    run = json.loads(json.dumps(RUN))
+    run["vision_summary"] = {"surface": {"decision": 0, "fallback": 0, "manual": 12, "total": 12}}
+    for p in report.write_report(make_run(tmp_path, [_cand(1, "rozbieżne")], run)).values():
+        if p.suffix != ".csv":
+            t = p.read_text(encoding="utf-8")
+            assert "kolejka ręczna" in t and "Brak wywołań modelu w tej kontroli." in t

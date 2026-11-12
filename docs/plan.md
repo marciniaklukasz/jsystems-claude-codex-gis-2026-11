@@ -2,7 +2,7 @@
 
 **Data:** 2026-11-03 · **Gałąź:** `worktree-map-qa-prototype`
 **Źródła:** [AGENTS.md](../AGENTS.md), [PRD](PRD.md), [ADR-000](ADR/000-main-architecture.md), [ADR-001](ADR/001-dane-normalizacja-dopasowanie.md), [ADR-002](ADR/002-odczyt-zdjec-modelami.md), [ADR-003](ADR/003-raport-i-dashboard.md)
-**Stan wyjściowy:** `app/` zawiera tylko README; brak `reports/map-qa/profile.md`; `uv` niedostępny w powłoce agenta.
+**Stan wyjściowy:** `app/` zawiera tylko README. Kroki 0a i 0b zrobione (uv 0.13.7, Python 3.12.16; `reports/map-qa/profile.md`, commit `d617668`).
 
 Wykonawca: Codex dla kroków bez modeli i raportu (M5, M7), Claude Code dla kroku z modelami (M6). Każdy krok to samodzielne zlecenie: agent czyta pliki z kolumny „Wejścia”, nie rusza plików spoza „Pliki”, kończy pokazaniem diffu i czeka na przegląd. Jeden agent edytuje dany plik w danej chwili.
 
@@ -23,7 +23,7 @@ Wykonawca: Codex dla kroków bez modeli i raportu (M5, M7), Claude Code dla krok
 
 ## Ochrona kosztu (obowiązuje cały plan)
 
-- Domyślne limity modeli = 0; kroki 0–5, 7–9 nie wykonują żadnego płatnego żądania.
+- Domyślne limity modeli = 0; kroki 0a–5, 7–9 nie wykonują żadnego płatnego żądania.
 - Płatne żądania tylko w kroku 6, po zgodzie użytkownika na konkretny manifest i przydziale budżetu przez prowadzącego.
 - Limit obejmuje wszystkie próby i błędy: Luna ≤ 25, Jev ≤ 5, drugi stopień ≤ 10, `--max-cost-usd` jawnie podany.
 - Zero automatycznych retry (także w SDK), timeout 40 s, pierwszy błąd wyłącza model w runie.
@@ -35,9 +35,10 @@ Wykonawca: Codex dla kroków bez modeli i raportu (M5, M7), Claude Code dla krok
 
 | # | Krok | Wejścia | Wyjścia / pliki | Zależy od | Kryteria | Agent |
 |---|---|---|---|---|---|---|
-| 0a | Środowisko | AGENTS.md | `uv --version` w raporcie kroku | — | — | Użytkownik + agent |
-| 0b | Profil danych | README danych, `sources.json`, `profile.sql` | `reports/map-qa/profile.md` | 0a | ADR-000 §5.1, ADR-001 §2 | Codex |
-| 1 | Szkielet i integralność | ADR-000 §3–4, §6 | `app/pyproject.toml`, `uv.lock`, `.python-version`, `src/map_qa/{config,ingest,cli}`, `tests/` | 0b | AC-01–AC-03, TAC-05 | Codex |
+| 0a ✅ | Środowisko | AGENTS.md | `uv --version` w raporcie kroku | — | — | Użytkownik + agent |
+| 0b ✅ | Profil danych | README danych, `sources.json`, `profile.sql` | `reports/map-qa/profile.md` | 0a | ADR-000 §5.1, ADR-001 §2 | Codex |
+| 0c | Decyzje z profilu | `profile.md` „Porównanie z ADR”, ADR-001 | `.gitattributes`, ADR-001 §3.4, §4.1 | 0b | AC-02 na Windows, ADR-001 §3.3/§3.4/§4.3 zgodne z profilem | Claude Code |
+| 1 | Szkielet i integralność | ADR-000 §3–4, §6 | `app/pyproject.toml`, `uv.lock`, `.python-version`, `src/map_qa/{config,ingest,cli}`, `tests/` | 0c | AC-01–AC-03, TAC-05 | Codex |
 | 2 | Normalizacja | ADR-001 §4.1–4.3 | `src/map_qa/normalize`, `tests/unit/` | 1 | AC-12, TAC-001-01, TAC-001-04 | Codex |
 | 3 | CRS i ocena połączeń | ADR-001 §3.2–3.4 | `src/map_qa/matching`, `tests/` | 1 | AC-04, AC-06–AC-09, TAC-001-02/03 | Codex |
 | 4 | Kategorie i raport bez modelu | ADR-001 §3.5, ADR-003 §3.1 | `src/map_qa/{compare,report,templates}` | 2, 3 | AC-05, AC-10–AC-16, AC-21, AC-24–AC-26 | Codex (M5 + M7) |
@@ -53,18 +54,26 @@ Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w osobnych
 
 ## Szczegóły kroków
 
-### 0a. Środowisko
+### 0a. Środowisko — ✅ zrobione 2026-11-03 (uv 0.13.7 przez winget, Python 3.12.16)
 - Instalacja uv przez menedżer pakietów (preferowane): `winget install --id=astral-sh.uv -e`, alternatywnie oficjalny instalator z https://docs.astral.sh/uv/getting-started/installation/. Wymaga zgody użytkownika przy uruchomieniu.
 - Nowe okno terminala, potem `uv --version` i `uv python install 3.12`.
 - **Koniec:** `uv --version` działa w powłoce agenta.
 
-### 0b. Profil danych (bez kodu aplikacji)
+### 0b. Profil danych (bez kodu aplikacji) — ✅ zrobione 2026-11-03, commit `d617668`
 - `uv run --python 3.12 course-materials/exercise-data/map-qa/profile_data.py`; kontrola GeoPandas i EPSG:2180 z README danych.
 - Wypisanie typów kolumn `speed_limits`, `road_surface`, `sources` z `overture_segments.parquet`.
 - Rozkład wartości `maxspeed*` i `surface` w OSM; liczności flag w `photo_road_links.csv`; dostępność zdjęć lokalnych (`download_photos.py --verify-only`).
 - Databricks `compare-counts` ręcznie z DATABRICKS.md, jeśli token jest dostępny; inaczej zapis ograniczenia.
 - **Koniec:** `profile.md` z poleceniami, wersjami, hashami, licznościami; porównanie z ADR-000 §5.1. Rozbieżność → aktualizacja ADR przed krokiem 1.
 - **Commit:** `Docs: map QA data profile`.
+
+### 0c. Decyzje z profilu (blokuje krok 1)
+- **Hash a CRLF** (`profile.md` decyzja 1): 5 plików tekstowych ma niezgodny SHA-256 przez `core.autocrlf=true`. **Wybrany wariant (a)** (2026-11-12): reguła `course-materials/exercise-data/** -text` w `.gitattributes` i ponowny checkout tych plików; ADR-001 §3.1 bez zmian. Odrzucony (b): hash po zamianie CRLF → LF w `ingest` — słabsza kontrola.
+- **ADR-001 §3.3** (`@wersja` opcjonalna) i **§4.3** (wartości Overture): wprowadzone w `d617668`; tu tylko kontrola zgodności z profilem.
+- **ADR-001 §3.4 krok 7:** dopisany pomiar udziału zdjęć z `ambiguous_link` przez ograniczony dostęp w kroku 3 względem D-103 (> 50%).
+- **ADR-001 §4.1:** bez zmiany decyzji; nota, że `PL:*` występuje w `maxspeed:type`, nie w `maxspeed`.
+- **Koniec:** `sha256sum` 5 plików tekstowych zgodny z `sources.json`; `git status` czysty w `course-materials/exercise-data/`; `git diff` ADR przejrzany.
+- **Commit:** `Docs: profile decisions in plan and ADR-001`; osobno `Repo: keep LF in exercise data`.
 
 ### 1. Szkielet i integralność
 - Testy: zgodne hashe → OK; kopia z 1 zmienionym bajtem → `InputIntegrityError` z nazwą pliku; CLI kod 1 bez raportu; liczności 99 768 / 85 405 / 561; złe argumenty → kod 2.
@@ -121,7 +130,8 @@ Wszystko z PRD §7, w tym edycja OSM, praca wielu użytkowników, trening modeli
 ## Ryzyka
 | Ryzyko | Skutek | Ograniczenie |
 |---|---|---|
-| Schemat Overture inny niż w ADR-001 §4.2 | Błędne `not_comparable` | Krok 0b przed kodem |
+| Schemat Overture inny niż w ADR-001 §4.2 | Błędne `not_comparable` | Krok 0b przed kodem — sprawdzone, zgodny |
+| CRLF zmienia hash plików danych na Windows | AC-02 blokuje każdy run | Krok 0c, wariant (a) |
 | SDK nie wspiera timeoutu w `decisions.create` | Brak limitu czasu | Weryfikacja w kroku 5; plan B: surowy POST (ADR-000 D-03) |
 | Większość zdjęć Panoramax tylko online | Mała próbka nawierzchni | `download_photos.py` w 0b; próbka z plików lokalnych |
 | Dużo `not_comparable` | Długa kolejka ręczna | Wyzwalacz D-102 (> 40%) |
@@ -129,7 +139,7 @@ Wszystko z PRD §7, w tym edycja OSM, praca wielu użytkowników, trening modeli
 | Dwa agenty w jednym pliku | Konflikty | Kroki 2/3 i 8 tylko w osobnych worktree |
 
 ## Pierwsza czynność
-Krok 0a: użytkownik instaluje uv (`winget install --id=astral-sh.uv -e`) i potwierdza `uv --version` w nowym terminalu.
+Krok 0c: reguła `-text` w `.gitattributes` dla `course-materials/exercise-data/**`, ponowny checkout plików danych i kontrola hashy z `sources.json`.
 
 ## Commit dokumentacji przed krokiem 1
 Po akceptacji planu: `git add docs`, commit `Docs: PRD, ADR, plan`, zapis hasha (`git rev-parse HEAD`) jako bazy do przeglądu w kroku 9.

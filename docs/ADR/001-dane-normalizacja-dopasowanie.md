@@ -61,7 +61,7 @@ Punkt wyjścia: dostarczony `photo_road_links.csv` (dla `signs/` — `signs/near
 4. `match_method = none` lub flaga `no_osm_within_25m` → zdjęcie wykluczone z licznikiem „brak kandydata w promieniu” (PRD §4.4).
 5. `camera_against_way_direction` i `boundary_crossing` są tylko informacją w raporcie — kierunek aparatu nie jest kierunkiem jazdy; nie oznaczają niepewności same w sobie.
 6. Remisy: zachowujemy regułę wejściową (`distance_m + bearing_diff/9`, brak kierunku = 5 m; remis → dystans, potem `osm_id`). Jeśli implementacja liczy kandydata ponownie przez `sjoin_nearest` (tylko w teście walidacyjnym), deduplikacja tą samą regułą.
-7. Drogi z `access` ∈ {`private`, `no`} lub `motor_vehicle` ∈ {`private`, `no`} → przyczyna `ambiguous_link` dla zdjęć z nimi połączonych (zdjęcie może przedstawiać sąsiednią drogę publiczną).
+7. Drogi z `access` ∈ {`private`, `no`} lub `motor_vehicle` ∈ {`private`, `no`} → przyczyna `ambiguous_link` dla zdjęć z nimi połączonych (zdjęcie może przedstawiać sąsiednią drogę publiczną). Profil 0b: ok. 15 000 takich dróg (głównie `service`), 14 zdjęć z flagą `service_way`. Liczbę zdjęć połączonych z drogą o ograniczonym dostępie mierzy krok 3 i porównuje z wyzwalaczem D-103 (> 50%).
 
 ### 3.5. `compare` — kategorie
 Dla każdej pary zbieramy dowody: (a) OSM vs Overture, (b) OSM vs odczyt zdjęcia (tylko połączenie pewne i odczyt pewny). Reguła łączenia:
@@ -87,7 +87,7 @@ Wejście: wszystkie klucze tagów zaczynające się od `maxspeed`. Surowe pary k
 | liczba z jednostką `km/h` | `numeric` | liczba | tak |
 | `mph`, `knots` | `other_unit` | — | nie → `not_comparable` |
 | kilka wartości przez `;` | `multiple` | — | nie → `not_comparable` |
-| `PL:urban`, `PL:rural`, `PL:motorway`, `PL:zone30` i inne `XX:*` | `implicit` | — | nie → `not_comparable` |
+| `PL:urban`, `PL:rural`, `PL:motorway`, `PL:zone30` i inne `XX:*` | `implicit` | — | nie → `not_comparable` (profil 0b: w snapshocie `PL:*` występuje tylko w `maxspeed:type`, więc reguła w praktyce nie zadziała) |
 | `none`, `signals`, `walk`, inny tekst | `special` | — | nie → `not_comparable` |
 | pusty / brak klucza | `missing` | — | → `missing` lub wykluczenie (§3.5) |
 

@@ -172,15 +172,21 @@ def check(stage: int, limits: Limits, out_dir: Path, data_dir: Path, db_path: Pa
             "photo_attribution": attribution, "summary": summary,
         }
         cand.to_parquet(partial / "candidates.parquet")
+        assessment.to_parquet(partial / "links.parquet")  # LinkAssessment (ADR-000 §5.2)
         readings.to_parquet(partial / "readings.parquet")
         (partial / "run.json").write_text(json.dumps(run_meta, ensure_ascii=False, indent=1), encoding="utf-8")
 
         _log("Zapis raportu Markdown, HTML i CSV; końcowa kontrola hashy wejść")
         report.write_report(partial, verify=lambda: ingest.verify_inputs(data_dir))
         final = out_dir / run_id
-        partial.rename(final)
-        partial = None
+        # zapis runu przed publikacją: błąd SQLite → kod 3 i brak opublikowanego raportu (R-A, ADR-000 §6)
         store.record_run(conn, run_id, stage, created_at, th["vision"]["questions_version"], "ok", {"run_dir": str(final), "summary": summary})
+        try:
+            partial.rename(final)
+        except OSError:
+            store.record_run(conn, run_id, stage, created_at, th["vision"]["questions_version"], "failed", {"run_dir": None})
+            raise
+        partial = None
         conn.close()
 
         _log("")

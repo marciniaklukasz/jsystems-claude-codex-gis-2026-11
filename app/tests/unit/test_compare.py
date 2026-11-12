@@ -236,3 +236,24 @@ def test_candidate_key_stable_and_sorted():
 
 def test_stage_of_attribute():
     assert cp.STAGE_OF == {"speed": 1, "surface": 1, "lit": 2, "junction": 2}
+
+
+def test_combine_per_photo_results():  # skrzyżowanie: każde zdjęcie względem mapy w swoim punkcie
+    z = cp.PairResult("zgodne", [], None, "a")
+    r = cp.PairResult("rozbieżne", [], None, "b")
+    q = cp.PairResult("do sprawdzenia", ["ambiguous_link"], None, "c")
+    q2 = cp.PairResult("do sprawdzenia", ["model_unavailable"], None, "d")
+    x = cp.PairResult(None, [], "brak porównywalnego dowodu", "")
+    assert cp.combine_results([z, r, q]).category == "rozbieżne"
+    assert cp.combine_results([q, z]).category == "zgodne"
+    assert cp.combine_results([q, q2, x]).reasons == ["ambiguous_link", "model_unavailable"]
+    assert cp.combine_results([x]).exclusion == "brak porównywalnego dowodu"
+
+
+def test_link_details_text():  # R-A: szczegóły LinkAssessment przy kandydacie (ADR-000 §5.2, ADR-001 §3.4)
+    row = {"photo_id": "p1", "status": "uncertain", "distance_m": 5.2128, "bearing_diff": 87.898,
+           "reasons": ["bearing_gt_threshold"], "info_flags": ["camera_against_way_direction"]}
+    t = cp.link_detail(row)
+    assert t == "p1: niepewne, 5.2 m, różnica kierunku 87.9°, przyczyny: bearing_gt_threshold; informacje: camera_against_way_direction"
+    row2 = {**row, "status": "certain", "bearing_diff": float("nan"), "reasons": [], "info_flags": []}
+    assert cp.link_detail(row2) == "p1: pewne, 5.2 m, różnica kierunku brak"

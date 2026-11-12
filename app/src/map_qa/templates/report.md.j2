@@ -67,9 +67,9 @@ Trafność i pokrycie (wykluczone etykiety niepewne: {{ evaluation.uncertain_lab
 ## Kandydaci
 
 {% if empty %}Brak kandydatów dla wybranego etapu.
-{% else %}| kategoria | atrybut | candidate_id | OSM id | nazwa | overture_ids | osm_raw | overture_raw | daty | reasons | reason_text | photo_reading | zdjęcia |
+{% else %}| kategoria | atrybut | candidate_id | OSM id | nazwa | overture_ids | osm_raw | overture_raw | daty | reasons | reason_text | połączenie | photo_reading | zdjęcia |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-{% for c in candidates %}| {{ c.category }} | {{ c.attribute }} | {{ c.candidate_id }} | [{{ c.osm_id }}]({{ c.osm_url }}) | {{ c.name }} | {{ c.overture_ids|tojson }} | {{ c.osm_raw }} | {{ c.overture_raw }} | {{ c.osm_timestamp }} / {{ c.overture_release }} | {{ c.reasons|tojson }} | {{ c.reason_text }} | {{ c.photo_reading }} | {% for photo in c.photos %}{% if photo.path %}![{{ photo.id }}]({{ photo.path }}){% else %}Zdjęcie niedostępne{% endif %} ({{ photo.author or "" }}, {{ photo.license or "" }}, [źródło]({{ photo.source_url or "" }})) {% endfor %} |
+{% for c in candidates %}| {{ c.category|mdcell }} | {{ c.attribute|mdcell }} | {{ c.candidate_id|mdcell }} | [{{ c.osm_id }}]({{ c.osm_url }}) | {{ c.name|mdcell }} | {{ c.overture_ids|tojson|mdcell }} | {{ c.osm_raw|mdcell }} | {{ c.overture_raw|mdcell }} | {{ c.osm_timestamp|mdcell }} / {{ c.overture_release|mdcell }} | {{ c.reasons|tojson|mdcell }} | {{ c.reason_text|mdcell }} | {{ (c.link_details or [])|join("; ")|mdcell }} | {{ c.photo_reading|mdcell }} | {% for photo in c.photos %}{% if photo.path %}![{{ photo.id|mdcell }}]({{ photo.path }}){% else %}Zdjęcie niedostępne{% endif %} ({{ (photo.author or "")|mdcell }}, {{ (photo.license or "")|mdcell }}, [źródło]({{ photo.source_url or "" }})) {% endfor %} |
 {% endfor %}{% endif %}
 
 Dane OSM i Overture: ODbL 1.0; zdjęcia: CC BY-SA 4.0 (autorzy przy zdjęciach).

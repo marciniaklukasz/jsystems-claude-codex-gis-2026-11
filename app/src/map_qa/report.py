@@ -12,6 +12,15 @@ from jinja2 import Environment, FileSystemLoader
 _TEMPLATES = Path(__file__).with_name("templates")
 _MD = Environment(loader=FileSystemLoader(_TEMPLATES), autoescape=False)
 _HTML = Environment(loader=FileSystemLoader(_TEMPLATES), autoescape=True)
+
+
+def _mdcell(value) -> str:
+    """Komórka tabeli Markdown: escapowanie `|` i zamiana nowych linii (wartości surowe zostają w Parquet i CSV)."""
+    text = "" if value is None else str(value)
+    return text.replace("|", "\\|").replace("\r\n", "<br>").replace("\n", "<br>")
+
+
+_MD.filters["mdcell"] = _mdcell
 _LABELS = {"speed": "ograniczenie prędkości", "surface": "nawierzchnia", "lit": "oświetlenie", "junction": "skrzyżowanie"}
 
 
@@ -52,11 +61,11 @@ def write_report(run_dir: Path, verify: Callable[[], None] | None = None) -> dic
     detailed = sorted((r for r in records if r.get("category") in ("rozbieżne", "do sprawdzenia")),
                       key=lambda r: (0 if r["category"] == "rozbieżne" else 1, r.get("attribute") or "", r.get("osm_id") or 0))
     for row in records:
-        for key in ("overture_ids", "photo_ids", "link_status", "reasons"):
+        for key in ("overture_ids", "photo_ids", "link_status", "reasons", "link_details"):
             if not isinstance(row.get(key), list):
                 row[key] = []
     for row in detailed:
-        for key in ("overture_ids", "photo_ids", "link_status", "reasons"):
+        for key in ("overture_ids", "photo_ids", "link_status", "reasons", "link_details"):
             if not isinstance(row.get(key), list):
                 row[key] = []
         row["photos"] = []

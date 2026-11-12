@@ -166,6 +166,32 @@ def _queue(reasons, attribute, highway, osm, extra=""):
     return PairResult("do sprawdzenia", list(reasons), None, "; ".join(parts))
 
 
+def link_detail(a: dict) -> str:
+    """Opis LinkAssessment dla analityka (dystans i kąt przeliczone w EPSG:2180, przyczyny, flagi informacyjne)."""
+    status = {"certain": "pewne", "uncertain": "niepewne"}.get(a["status"], a["status"])
+    bd = a.get("bearing_diff")
+    bd_txt = "brak" if bd is None or (isinstance(bd, float) and math.isnan(bd)) else f"{bd:.1f}°"
+    txt = f"{a['photo_id']}: {status}, {a['distance_m']:.1f} m, różnica kierunku {bd_txt}"
+    if len(a.get("reasons") or []):
+        txt += ", przyczyny: " + ", ".join(a["reasons"])
+    if len(a.get("info_flags") or []):
+        txt += "; informacje: " + ", ".join(a["info_flags"])
+    return txt
+
+
+def combine_results(results: list[PairResult]) -> PairResult:
+    """Łączy wyniki dowodów częściowych tej samej pary wg kolejności ADR-001 §3.5 (rozbieżne > zgodne > kolejka > wykluczenie)."""
+    for cat in ("rozbieżne", "zgodne"):
+        hit = [r for r in results if r.category == cat]
+        if hit:
+            return PairResult(cat, [], None, "; ".join(dict.fromkeys(r.reason_text for r in hit)))
+    queue = [r for r in results if r.category == "do sprawdzenia"]
+    if queue:
+        reasons = list(dict.fromkeys(x for r in queue for x in r.reasons))
+        return PairResult("do sprawdzenia", reasons, None, "; ".join(dict.fromkeys(r.reason_text for r in queue)))
+    return PairResult(None, [], results[0].exclusion if results else EXCL_NO_EVIDENCE, "")
+
+
 # --- Overture → OSM -----------------------------------------------------------------------
 _RECORD = re.compile(r"^w(\d+)(?:@.*)?$")
 
@@ -315,12 +341,19 @@ def build_candidates(layers, assessment: pd.DataFrame, readings: pd.DataFrame | 
                 o = nz.parse_lit(tags.get("lit"))
                 ov = None
             else:
+                # skrzyżowanie: każde zdjęcie porównywane z mapą w swoim punkcie rzutu (ADR-001 §4.4)
                 w = dict(way)
                 w["geometry"] = geo2180[oid]
                 vals = [map_junction(w, deg, pts.loc[p["photo_id"]], th["links"]["junction_radius_m"]) for p in wphotos]
-                o = vals[0] if len({(v.status, v.value) for v in vals}) == 1 else Normalized("not_comparable", None, "partial", vals[0].raw)
+                per_photo = [categorize(attr, hw, v, None, [e], missing_classes) for v, e in zip(vals, evid)]
+                res = combine_results(per_photo)
+                o = Normalized(vals[0].status if len({v.status for v in vals}) == 1 else "not_comparable",
+                               ",".join(sorted({str(v.value) for v in vals if v.value is not None})) or None,
+                               "junction", nz.to_json({e.photo_id: {"status": v.status, "value": v.value, "detail": v.detail}
+                                                        for v, e in zip(vals, evid)}))
                 ov = None
-            res = categorize(attr, hw, o, ov, evid, missing_classes)
+            if attr != "junction":
+                res = categorize(attr, hw, o, ov, evid, missing_classes)
             if res.category is None:
                 excl[f"{ATTRIBUTE_LABEL[attr]}: {res.exclusion}"] += 1
                 continue
@@ -345,6 +378,7 @@ def build_candidates(layers, assessment: pd.DataFrame, readings: pd.DataFrame | 
                 "overture_status": "" if ov is None else ov.status,
                 "photo_ids": [p["photo_id"] for p in wphotos],
                 "link_status": [p["status"] for p in wphotos],
+                "link_details": [link_detail(p) for p in wphotos],
                 "photo_reading": "; ".join(readings_txt) if readings_txt else "brak odczytu modelu",
                 "osm_timestamp": str(way["osm_timestamp"]),
                 "osm_extract_date": extract,

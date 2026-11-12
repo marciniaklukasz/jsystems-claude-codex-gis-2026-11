@@ -73,3 +73,18 @@ def test_check_stage1_counts_exit_0(data_dir, tmp_path, capsys):
     out = _digits(capsys.readouterr().out)
     assert code == 0
     assert "99768" in out and "85405" in out and "561" in out and "1730" in out
+
+
+def test_store_failure_after_report_leaves_no_published_report(tmp_path, capsys, monkeypatch):  # R-A #1, ADR-000 §6
+    import sqlite3
+
+    from map_qa import store
+
+    def locked(*a, **k):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(store, "record_run", locked)
+    out = tmp_path / "out"
+    code = cli.main(["check", "--stage", "1", "--out", str(out), "--db", str(tmp_path / "t.db")])
+    assert code == 3
+    assert not out.exists() or not list(out.rglob("report.*"))

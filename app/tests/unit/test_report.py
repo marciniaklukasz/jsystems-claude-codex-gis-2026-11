@@ -240,3 +240,23 @@ def test_photo_href_other_drive_falls_back_to_file_uri(monkeypatch, tmp_path):
     img.write_bytes(b"x")
     monkeypatch.setattr(_os.path, "relpath", boom)
     assert report._photo_href(str(img), tmp_path / "run").startswith("file:///")
+
+
+def test_md_table_cells_escape_pipes_and_newlines(tmp_path):  # R-A: prawdziwa wartość z drogi 140855412
+    c = _cand(1, "rozbieżne")
+    c["osm_raw"] = '{"maxspeed": "120", "maxspeed:lanes": "120|120|120|80"}'
+    c["reason_text"] = "linia1\nlinia2"
+    md = report.write_report(make_run(tmp_path, [c]))["md"].read_text(encoding="utf-8")
+    row = next(line for line in md.splitlines() if "c0001" in line)
+    header = next(line for line in md.splitlines() if line.startswith("| kategoria"))
+    unescaped = row.replace("\|", "")
+    assert unescaped.count("|") == header.count("|")
+    assert "120\|120\|120\|80" in row
+
+
+def test_link_details_shown(tmp_path):  # R-A: LinkAssessment przy kandydacie
+    c = _cand(1, "do sprawdzenia", reasons=("ambiguous_link",), photo_ids=["p1"])
+    c["link_details"] = ["p1: niepewne, 5.2 m, różnica kierunku 87.9°, przyczyny: bearing_gt_threshold"]
+    paths = report.write_report(make_run(tmp_path, [c]))
+    for fmt in ("md", "html"):
+        assert "różnica kierunku 87.9°" in paths[fmt].read_text(encoding="utf-8")

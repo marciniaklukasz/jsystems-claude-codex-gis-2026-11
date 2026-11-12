@@ -45,3 +45,52 @@ state_text = "Street-level photograph. Answer about what is visible."
 # Progi akceptacji odczytu (AC-23), zapisane przed końcową próbą.
 min_coverage = 0.3
 min_accuracy = 0.8
+
+# Pytania do modeli, questions_version = 1 (ADR-002 §4.1). Zmiana tekstu lub opcji → questions_version + 1.
+# Neutralne teksty po angielsku: bez nazw miejsc, identyfikatorów i danych mapy (AC-17).
+[questions.speed_limit_value]
+stage = 1
+instructions = "Look for a round prohibitory speed-limit sign (red ring with a number in the middle) in the image. Which number does it show?"
+[questions.speed_limit_value.criteria]
+"5" = "The sign shows 5."
+"10" = "The sign shows 10."
+"20" = "The sign shows 20."
+"30" = "The sign shows 30."
+"40" = "The sign shows 40."
+"50" = "The sign shows 50."
+"60" = "The sign shows 60."
+"70" = "The sign shows 70."
+"80" = "The sign shows 80."
+"90" = "The sign shows 90."
+"100" = "The sign shows 100."
+"110" = "The sign shows 110."
+"120" = "The sign shows 120."
+"130" = "The sign shows 130."
+"140" = "The sign shows 140."
+none = "No round prohibitory speed-limit sign is visible (zone signs and end-of-limit signs do not count)."
+unreadable = "Such a sign is visible but its number cannot be read."
+unknown = "It cannot be decided from the image."
+
+[questions.surface]
+stage = 1
+instructions = "What is the surface of the road on which the camera stands?"
+[questions.surface.criteria]
+paved = "Paved: asphalt, concrete or paving blocks."
+unpaved = "Unpaved: gravel, dirt, grass or similar."
+unknown = "It cannot be decided from the image."
+
+[questions.street_lighting_visible]
+stage = 2
+instructions = "Is an identifiable street-lamp fixture visible in the image? A pole alone is not enough."
+[questions.street_lighting_visible.criteria]
+yes = "A street-lamp fixture is visible."
+no = "No street-lamp fixture is visible."
+unknown = "It cannot be decided from the image."
+
+[questions.junction_visible]
+stage = 2
+instructions = "Is a junction visible where another road for vehicles joins or splits from the road on which the camera stands? Pedestrian crossings and overpasses do not count."
+[questions.junction_visible.criteria]
+yes = "A junction with another vehicle road is visible."
+no = "No such junction is visible."
+unknown = "It cannot be decided from the image."

@@ -1,0 +1,69 @@
+"""ADR-002 §4.7, D-204; PRD AC-19a, AC-19c (próbka par, podział po sequence, manifest przed żądaniem)."""
+
+from __future__ import annotations
+
+import hashlib
+
+import pandas as pd
+
+from map_qa import config, vision
+
+TH = config.load_thresholds()
+
+
+def labels(rows):
+    return pd.DataFrame(rows, columns=["photo_id", "question_id", "label", "status", "sequence"])
+
+
+def test_split_by_sequence_hash():
+    seq = "abc"
+    first = hashlib.sha256(seq.encode()).digest()[0]
+    assert vision.split_of(seq) == ("validation" if first % 2 == 0 else "test")
+
+
+def test_select_pairs_certain_only_balanced_and_ordered():
+    rows = []
+    for i in range(20):
+        rows.append((f"s{i}", "speed_limit_value", "50", "certain", f"q{i % 3}"))
+        rows.append((f"r{i}", "surface", "paved", "certain" if i % 4 else "uncertain", f"q{i % 5}"))
+    m = vision.select_pairs(labels(rows), ["speed_limit_value", "surface"], 25)
+    assert len(m) == 25
+    assert (m["question_id"] == "speed_limit_value").sum() == 13 and (m["question_id"] == "surface").sum() == 12
+    assert list(m["order"]) == list(range(25))
+    # tylko certain
+    unc = {f"r{i}" for i in range(20) if i % 4 == 0}
+    assert not set(m["photo_id"]) & unc
+    # cała sekwencja w jednym podziale
+    assert m.groupby("sequence")["split"].nunique().max() == 1
+    # kolejność w obrębie pytania po sha256(photo_id + question_id)
+    sp = m[m["question_id"] == "surface"]["photo_id"].tolist()
+    assert sp == sorted(sp, key=lambda p: hashlib.sha256((p + "surface").encode()).hexdigest())
+
+
+def test_select_pairs_alternates_questions():
+    rows = [(f"a{i}", "speed_limit_value", "50", "certain", "x") for i in range(3)] + [(f"b{i}", "surface", "paved", "certain", "y") for i in range(3)]
+    m = vision.select_pairs(labels(rows), ["speed_limit_value", "surface"], 4)
+    assert list(m["question_id"]) == ["speed_limit_value", "surface", "speed_limit_value", "surface"]
+
+
+def test_select_pairs_fills_from_other_question_when_one_runs_out():
+    rows = [("a0", "speed_limit_value", "50", "certain", "x")] + [(f"b{i}", "surface", "paved", "certain", "y") for i in range(5)]
+    m = vision.select_pairs(labels(rows), ["speed_limit_value", "surface"], 4)
+    assert len(m) == 4 and (m["question_id"] == "surface").sum() == 3
+
+
+def test_build_sample_real_data_stage1_and_manifest_written(tmp_path, data_dir):  # AC-19c
+    from map_qa import evaluation
+
+    lab = evaluation.load_labels(data_dir)
+    sample = vision.build_sample(1, 25, TH, data_dir, lab)
+    m = sample.manifest
+    assert len(m) == 25
+    assert (m["question_id"] == "speed_limit_value").sum() == 13
+    assert m["image_sha256"].str.len().eq(64).all()
+    assert set(m.columns) >= {"photo_id", "question_id", "split", "sequence", "image_sha256", "order"}
+    path = vision.write_manifest(m, tmp_path)
+    assert path.name == "sample_manifest.csv"
+    back = pd.read_csv(path, dtype=str)
+    assert list(back["photo_id"]) == list(m["photo_id"])
+    assert set(sample.images) == set(m["image_sha256"])

@@ -4,3 +4,6 @@
 *.py text eol=lf
 *.toml text eol=lf
 *.yml text eol=lf
+
+# Course input data: keep bytes exactly as committed (sizes and SHA-256 in sources.json)
+course-materials/exercise-data/** -text

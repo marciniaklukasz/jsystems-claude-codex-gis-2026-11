@@ -67,7 +67,7 @@ Kroki 2 i 3 są niezależne (różne pliki) i mogą iść równolegle w osobnych
 - **Koniec:** `profile.md` z poleceniami, wersjami, hashami, licznościami; porównanie z ADR-000 §5.1. Rozbieżność → aktualizacja ADR przed krokiem 1.
 - **Commit:** `Docs: map QA data profile`.
 
-### 0c. Decyzje z profilu (blokuje krok 1)
+### 0c. Decyzje z profilu (blokuje krok 1) — ✅ `.gitattributes` wykonane 2026-11-12: 8/8 plików z `sources.json` zgodnych (rozmiar i SHA-256), `signs` 119/119, liczności bez zmian
 - **Hash a CRLF** (`profile.md` decyzja 1): 5 plików tekstowych ma niezgodny SHA-256 przez `core.autocrlf=true`. **Wybrany wariant (a)** (2026-11-12): reguła `course-materials/exercise-data/** -text` w `.gitattributes` i ponowny checkout tych plików; ADR-001 §3.1 bez zmian. Odrzucony (b): hash po zamianie CRLF → LF w `ingest` — słabsza kontrola.
 - **ADR-001 §3.3** (`@wersja` opcjonalna) i **§4.3** (wartości Overture): wprowadzone w `d617668`; tu tylko kontrola zgodności z profilem.
 - **ADR-001 §3.4 krok 7:** dopisany pomiar udziału zdjęć z `ambiguous_link` przez ograniczony dostęp w kroku 3 względem D-103 (> 50%).

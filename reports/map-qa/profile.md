@@ -1,7 +1,7 @@
 # Profil danych map-qa (krok 0b)
 
-**Data:** 2026-11-03 · **Gałąź:** `worktree-map-qa-prototype` · **Baza:** `03dcb56`
-**Zakres:** tylko odczyt plików w `course-materials/exercise-data/map-qa/`; wejścia niezmienione, brak pobrań zdjęć, brak wywołań modeli. Databricks i API nie były odpytywane (brak ustawionych zmiennych w tej sesji) — patrz „Ograniczenia”.
+**Data:** 2026-11-03, uzupełnienie Databricks 2026-11-12 · **Gałąź:** `worktree-map-qa-prototype`, uzupełnienie na `map-app-implementation` (`4e1dc3f`)
+**Zakres:** tylko odczyt plików w `course-materials/exercise-data/map-qa/` i jeden `SELECT count(*)` z tabel `workspace.map_qa`; wejścia i tabele niezmienione, brak pobrań zdjęć, brak wywołań płatnych modeli. Zmienne `DATABRICKS_HOST` i `DATABRICKS_TOKEN` sprawdzone tylko pod kątem obecności. Mapillary, Panoramax i Overture przez sieć nieodpytane.
 
 ## Środowisko
 
@@ -23,7 +23,12 @@ uv run --python 3.12 course-materials/exercise-data/map-qa/profile_data.py
 uv run --python 3.12 --with geopandas==1.2.0 --with pyarrow==23.0.1 python -c "<odczyt obu warstw, is_valid, to_crs(2180)>"
 uv run --python 3.12 course-materials/exercise-data/map-qa/download_photos.py --verify-only
 uv run --python 3.12 course-materials/exercise-data/map-qa/signs/build_signs.py --verify-only
+# 2026-11-12: Databricks (warehouse z DATABRICKS.md, tylko SELECT)
+$env:DATABRICKS_SQL_WAREHOUSE_ID="97c455ee6fb1fcb9"
+uv run --python 3.12 course-materials/exercise-data/map-qa/query_databricks.py --statement "SELECT 'osm_roads' AS source, count(*) AS rows FROM workspace.map_qa.osm_roads UNION ALL ... workspace.map_qa.traffic_signs"
 ```
+
+Ponowne uruchomienie `profile_data.py` 2026-11-12 (uv 0.13.7) dało te same liczności, typy geometrii i rozkłady co 2026-11-03.
 
 Dodatkowe zapytania DuckDB (schemat zagnieżdżonych kolumn Overture, rozkłady tagów OSM, crosswalk Overture→OSM) uruchomiono jednorazowym skryptem poza repozytorium; wyniki poniżej.
 
@@ -50,6 +55,20 @@ Dodatkowe zapytania DuckDB (schemat zagnieżdżonych kolumn Overture, rozkłady 
 | photo_road_links.csv | 561 | — | — | — | — |
 
 Zgodne z PRD AC-03 i ADR-000 §5.1.
+
+### Pliki lokalne a Databricks (2026-11-12)
+
+Odczyt: `query_databricks.py`, stan `SUCCEEDED`, 5 wierszy, 1 chunk, `truncated: false`.
+
+| Tabela / plik | Lokalnie | `workspace.map_qa` | Zgodność |
+|---|---:|---:|---|
+| `osm_roads` | 99 768 | 99 768 | ✓ |
+| `overture_segments` | 85 405 | 85 405 | ✓ |
+| `photos` | 561 | 561 | ✓ |
+| `photo_road_links` | 561 | 561 | ✓ |
+| `traffic_signs` | 1 730 (`traffic_signs.geojson`, 1 730 unikalnych `id`) | 1 730 | ✓ |
+
+Różnica typów: lokalnie DuckDB czyta geometrię jako `GEOMETRY('EPSG:4326')` / `GEOMETRY('OGC:CRS84')`, a tabele Databricks trzymają ją jako `BINARY` WKB bez SRID (`DATABRICKS.md`). W SQL trzeba jawnie użyć `ST_GeomFromWKB(geometry, 4326)` i `ST_Transform(..., 2180)`. Zgodność liczności nie potwierdza zgodności zawartości wierszy (bez porównania hashy ani wartości).
 
 ## OSM: kompletność atrybutów
 
@@ -131,7 +150,9 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 - `mapillary_1931009810597411` (`signs/`): droga 187014751 residential, 7,84 m, `heading_diff` 1,2°, `maxspeed` 40; Mapillary wykrył `maximum-speed-limit-20` — przykład, że wartość znaku na zdjęciu nie musi dotyczyć tej drogi ani kierunku.
 
 ## Ograniczenia
-- Databricks (`workspace.map_qa`), Mapillary, Panoramax i Overture przez sieć — nieodpytane; porównanie liczności plik ↔ tabela do wykonania z tokenem od prowadzącego.
+- Databricks: porównane tylko liczności; poprawność geometrii i dystanse po stronie Databricks (zapytania z `DATABRICKS.md` § „Kontrole przestrzenne”) nieuruchomione.
+- Mapillary, Panoramax i Overture przez sieć — nieodpytane.
+- Hash plików CSV/GeoJSON nadal niezgodny w kopii roboczej (`git ls-files --eol`: `i/lf w/crlf`, brak reguły w `.gitattributes`) — stan z 2026-11-03 bez zmian.
 - Profil nie otwierał ręcznie zdjęć; ocena „właściwa jezdnia” dla przykładów niepewnych pozostaje do Manual QA w kroku 3.
 - Liczności dotyczą snapshotu OSM 2026-11-01 i Overture 2026-10-21.0.
 
@@ -144,3 +165,17 @@ Wystarcza na próbkę etapu 1 z ADR-002 §4.7 (13 par prędkości + 12 nawierzch
 3. ADR-001 §4.3: dopisać do mapowania Overture `paving_stones` → paved, `gravel`/`dirt` → unpaved, `unknown` → `not_comparable`; literówki OSM pozostają `not_comparable`.
 4. ADR-001 §3.3: parser `record_id` toleruje brak `@wersja`.
 5. ADR-001 §3.4 krok 7: `access` ∈ {private, no} ma 15 000 dróg (głównie `service`); dla zdjęć to 14 flag `service_way` i nieznana liczba dróg z ograniczonym dostępem — zmierzyć w kroku 3 względem wyzwalacza D-103 (> 50%).
+
+## 5 faktów, które zmieniają projekt
+
+1. **Hash plików tekstowych nie zgadza się na Windows** (CRLF w kopii roboczej). Kontrola integralności z AC-02 zablokuje każdy run, dopóki repo albo `ingest` tego nie rozwiąże.
+2. **`maxspeed` jest zawsze liczbą**; `PL:urban`, `PL:zone30` itd. są w osobnym tagu `maxspeed:type`, a `none` i wielowartościowe `maxspeed` w tym snapshocie nie występują. Złożoność jest w `maxspeed:forward/backward` (223 drogi z różnymi wartościami) i `maxspeed:conditional` (92). Parser musi czytać te tagi, nie samą kolumnę.
+3. **Tylko ~83% reguł prędkości Overture jest bez `when`/`between`** (11 841 z 14 205); 911 segmentów ma ≥ 2 reguły. Reguła „porównywalna tylko jedna bezwarunkowa reguła” odrzuci te segmenty jako `not_comparable` — to świadome ograniczenie zasięgu.
+4. **72% dróg OSM to `service`**, a 15 000 dróg ma `access` private/no. Bez filtra dostępu i klasy pipeline zaleje kolejkę ręczną mało ważnymi dojazdami.
+5. **Databricks i pliki mają identyczne liczności**, ale geometrię w Databricks jako WKB bez SRID. Pliki lokalne mogą pozostać jedynym źródłem pipeline'u (ADR-000 D-02), a Databricks służy do kontroli krzyżowej; każde zapytanie przestrzenne w Databricks musi jawnie ustawiać SRID 4326 i liczyć dystans w EPSG:2180.
+
+## 3 pytania do człowieka
+
+1. **CRLF a hash:** zgadzasz się na regułę `-text` w `.gitattributes` dla `course-materials/exercise-data/**` i ponowny checkout (rekomendacja), czy wolisz normalizację CRLF → LF w `ingest`?
+2. **Zakres dróg w etapie 1:** czy kolejka ręczna ma obejmować tylko `tertiary` i wyższe (8 739 dróg), czy także `residential` / `living_street` z `maxspeed`?
+3. **Kontrole przestrzenne w Databricks:** czy uruchomić teraz zapytania z `DATABRICKS.md` (poprawność geometrii, ponowne liczenie dystansu, pokrycie bbox), czy porównanie liczności wystarcza do M2?

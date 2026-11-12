@@ -1,0 +1,310 @@
+[
+ {
+  "_source": "osm_roads.parquet osm_id=2954554 (2026-11-12)",
+  "case": "simple_maxspeed_40",
+  "osm_id": 2954554,
+  "osm_timestamp": "2026-02-21 10:25:53+00:00",
+  "highway": "residential",
+  "tags": "{\"cycleway:both\": \"no\", \"highway\": \"residential\", \"lane_markings\": \"no\", \"lit\": \"yes\", \"maxspeed\": \"40\", \"name\": \"Ignacego Mościckiego\", \"sidewalk\": \"separate\", \"smoothness\": \"excellent\", \"surface\": \"asphalt\", \"width\": \"5.5\"}",
+  "node_ids": [
+   12592824102,
+   12592824103,
+   1234198734,
+   13822694,
+   1234198742,
+   12592824101,
+   8306202089,
+   9905611919,
+   9905611923,
+   282909687,
+   9905611922,
+   8306318484,
+   9905611921
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (20.0345447 50.080804, 20.0345751 50.0808137, 20.0355215 50.0813264, 20.0355905 50.0813624, 20.0356575 50.0813984, 20.0361137 50.0816451, 20.0361325 50.0816548, 20.0361644 50.0816701, 20.0362002 50.0816828, 20.036242 50.0816958, 20.0362848 50.0817067, 20.0363276 50.0817143, 20.0363778 50.0817211)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=19793303 (2026-11-12)",
+  "case": "conditional",
+  "osm_id": 19793303,
+  "osm_timestamp": "2026-03-09 09:39:18+00:00",
+  "highway": "motorway",
+  "tags": "{\"destination:colour:lanes\": \"none|none|white;green;green\", \"destination:lanes\": \"Katowice;Kraków-Pn.;Warszawa|Katowice;Kraków-Pn.;Warszawa|Balice;Kryspinów;Zabierzów\", \"destination:ref:lanes\": \"A4;7|A4;7|774\", \"destination:symbol:lanes\": \"none|none|airport\", \"highway\": \"motorway\", \"highway:category:pl\": \"1\", \"highway:class:pl\": \"A\", \"int_ref\": \"E 40;E 77\", \"lanes\": \"3\", \"maxaxleload\": \"11.5\", \"maxspeed\": \"140\", \"maxspeed:bus\": \"80\", \"maxspeed:conditional\": \"110 @ (Mo-Fr 06:00-18:00)\", \"maxspeed:hgv\": \"80\", \"maxspeed:trailer\": \"80\", \"oneway\": \"yes\", \"placement\": \"right_of:1\", \"ref\": \"A4;52\", \"source:maxaxleload\": \"Dz.U. 2011 nr 222 poz. 1321 Art. 2 pkt. 11\", \"source:maxspeed\": \"PL:motorway\", \"source:toll\": \"Rozporządzenie Rady Ministrów z dnia 6 lipca 2016 r.\", \"source:toll:url\": \"http://dziennikustaw.gov.pl/du/2016/1049/D2016000104901.pdf\", \"source:width\": \"ortofoto\", \"surface\": \"asphalt\", \"toll\": \"no\", \"toll:bus\": \"yes\", \"toll:hgv\": \"yes\", \"turn:lanes\": \"through|through|right\", \"width\": \"10\"}",
+  "node_ids": [
+   30377037,
+   1802038854
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8103163 50.0723428, 19.8099407 50.0738245)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=22810656 (2026-11-12)",
+  "case": "forward_backward_diff",
+  "osm_id": 22810656,
+  "osm_timestamp": "2023-03-14 11:46:19+00:00",
+  "highway": "residential",
+  "tags": "{\"cycleway:both\": \"no\", \"highway\": \"residential\", \"lit\": \"yes\", \"maxspeed:backward\": \"20\", \"maxspeed:forward\": \"30\", \"name\": \"Słomiana\", \"sidewalk\": \"separate\", \"source:maxspeed:backward\": \"sign\", \"source:maxspeed:forward\": \"sign\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   1251896072,
+   7837882707,
+   2510785052,
+   1207178559,
+   3523866311
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.9253001 50.0443799, 19.925333 50.0443003, 19.92552 50.043959, 19.9255367 50.0439258, 19.9256479 50.0437467)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=218395900 (2026-11-12)",
+  "case": "forward_backward_equal",
+  "osm_id": 218395900,
+  "osm_timestamp": "2023-10-21 19:26:08+00:00",
+  "highway": "secondary",
+  "tags": "{\"highway\": \"secondary\", \"highway:category:pl\": \"2\", \"lanes\": \"2\", \"maxspeed:backward\": \"50\", \"maxspeed:forward\": \"50\", \"name\": \"Księcia Józefa\", \"source:maxspeed:backward\": \"sign\", \"source:maxspeed:forward\": \"PL:urban\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   2276334494,
+   1361540692,
+   6066460097,
+   30371935,
+   2328543172
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8580959 50.0449614, 19.8580479 50.0449558, 19.857977 50.0449465, 19.8571136 50.0448336, 19.8565589 50.0447676)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=24559626 (2026-11-12)",
+  "case": "forward_only",
+  "osm_id": 24559626,
+  "osm_timestamp": "2023-09-16 08:15:13+00:00",
+  "highway": "tertiary",
+  "tags": "{\"bicycle\": \"yes\", \"bridge\": \"yes\", \"cycleway:both\": \"no\", \"highway\": \"tertiary\", \"lane_markings\": \"no\", \"lanes\": \"2\", \"layer\": \"1\", \"maxspeed:forward\": \"40\", \"maxweight\": \"2.5\", \"name\": \"Jesionowa\", \"oneway\": \"no\", \"parking:condition:both\": \"no_stopping\", \"source:maxspeed:forward\": \"sign\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   262033357,
+   262033359
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8764808 50.070148, 19.8767487 50.0704435)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=19801349 (2026-11-12)",
+  "case": "maxspeed_type_pl",
+  "osm_id": 19801349,
+  "osm_timestamp": "2026-06-28 14:24:26+00:00",
+  "highway": "residential",
+  "tags": "{\"highway\": \"residential\", \"lit\": \"yes\", \"maxspeed\": \"30\", \"maxspeed:type\": \"PL:zone30\", \"name\": \"Marka Nawary\", \"old_name\": \"Zygmunta Młynarskiego\", \"sidewalk\": \"separate\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   206349542,
+   13286379051,
+   2664720629,
+   13944015682,
+   4114575421,
+   206349645,
+   4114591971,
+   13972350698,
+   4114575403,
+   13972363302,
+   13972363439,
+   13972363317,
+   13969341521,
+   206349580,
+   13969341523,
+   13972363312,
+   3398336975,
+   13969341593,
+   13968619921,
+   13969341596,
+   13968619925,
+   13969341599,
+   13968619929,
+   13969341603,
+   13968619933,
+   4114575298,
+   13968619937,
+   4114591967,
+   206349582
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.886463 50.0760472, 19.8864553 50.076011, 19.8864436 50.0759829, 19.8862539 50.0755225, 19.8861227 50.075205, 19.8861175 50.0751925, 19.8859845 50.074869, 19.8859308 50.0747439, 19.8859082 50.0746911, 19.8858822 50.0746274, 19.8858319 50.0745043, 19.8857895 50.0744002, 19.8857374 50.0742727, 19.8857206 50.0742295, 19.8857149 50.074195, 19.885718 50.0741587, 19.8857296 50.0740713, 19.8857423 50.0739555, 19.8857461 50.0739212, 19.8857564 50.0738429, 19.8857608 50.0738092, 19.8857697 50.0737296, 19.8857739 50.0736926, 19.8857827 50.0736161, 19.8857868 50.0735798, 19.8857955 50.0735038, 19.8858001 50.0734662, 19.8858141 50.0733478, 19.8858267 50.0732708)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=4576181 (2026-11-12)",
+  "case": "hgv",
+  "osm_id": 4576181,
+  "osm_timestamp": "2024-11-29 22:58:51+00:00",
+  "highway": "motorway",
+  "tags": "{\"highway\": \"motorway\", \"highway:category:pl\": \"1\", \"highway:class:pl\": \"S\", \"int_ref\": \"E 77\", \"lanes\": \"2\", \"maxaxleload\": \"11.5\", \"maxspeed\": \"120\", \"maxspeed:bus\": \"80\", \"maxspeed:hgv\": \"80\", \"maxspeed:trailer\": \"80\", \"old_ref\": \"S7;A41\", \"oneway\": \"yes\", \"ref\": \"S52;7\", \"source:maxaxleload\": \"Dz.U. 2011 nr 222 poz. 1321 Art. 2 pkt. 11\", \"source:maxspeed\": \"PL:expressway\", \"surface\": \"asphalt\", \"toll:bus\": \"yes\", \"toll:hgv\": \"yes\"}",
+  "node_ids": [
+   206227622,
+   5258401314,
+   26582144
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8078345 50.0882065, 19.8071766 50.0878812, 19.8065982 50.0876133)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=1494535349 (2026-11-12)",
+  "case": "surface_typo",
+  "osm_id": 1494535349,
+  "osm_timestamp": "2026-03-31 08:25:28+00:00",
+  "highway": "service",
+  "tags": "{\"access\": \"permit\", \"highway\": \"service\", \"source\": \"Yahoo! Imagery\", \"surface\": \"paving_Stones\"}",
+  "node_ids": [
+   13694760494,
+   13694760486,
+   781858163,
+   13694760493,
+   13694760492
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (20.0323961 50.0222433, 20.0324395 50.0223416, 20.0324521 50.0223702, 20.0324618 50.0223878, 20.0324713 50.0224052)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=20191161 (2026-11-12)",
+  "case": "tertiary_no_maxspeed",
+  "osm_id": 20191161,
+  "osm_timestamp": "2026-09-08 08:42:21+00:00",
+  "highway": "tertiary",
+  "tags": "{\"bridge\": \"yes\", \"cycleway:both\": \"no\", \"highway\": \"tertiary\", \"lanes\": \"1\", \"layer\": \"1\", \"maxweight\": \"10\", \"name\": \"Długa\", \"priority\": \"forward\", \"shoulder\": \"no\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   213522826,
+   213522786
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8065735 50.0930655, 19.8069304 50.0931141)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=22690463 (2026-11-12)",
+  "case": "residential_no_maxspeed",
+  "osm_id": 22690463,
+  "osm_timestamp": "2026-01-12 20:51:10+00:00",
+  "highway": "residential",
+  "tags": "{\"highway\": \"residential\", \"name\": \"Witkowicka\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   2600424432,
+   11530071235,
+   11781299291,
+   12050149346,
+   12050149331,
+   12050808722,
+   12050808743,
+   7817009872,
+   12050808765,
+   12050808769,
+   7817009874,
+   12050808772,
+   12050808846,
+   10779881518,
+   12050808775,
+   7817009870,
+   290849817,
+   7815174086,
+   9910426141,
+   290849819
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.9653774 50.1088283, 19.9652916 50.1088449, 19.9652224 50.108856, 19.9650126 50.1088864, 19.9646955 50.108936, 19.9644817 50.10897, 19.9642325 50.1090096, 19.9641493 50.109023, 19.9637312 50.1090905, 19.9636598 50.1091021, 19.963535 50.1091221, 19.963478 50.1091311, 19.9633776 50.109147, 19.9631842 50.1091775, 19.9630628 50.1091971, 19.9628259 50.1092352, 19.9626569 50.1092612, 19.9623291 50.1093066, 19.9622736 50.1093091, 19.9621645 50.1092926)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=19801525 (2026-11-12)",
+  "case": "access_private",
+  "osm_id": 19801525,
+  "osm_timestamp": "2026-04-25 16:26:04+00:00",
+  "highway": "service",
+  "tags": "{\"access\": \"private\", \"highway\": \"service\"}",
+  "node_ids": [
+   10013604636,
+   10013604634,
+   13294899538,
+   13761082302,
+   8087489387,
+   13294909973,
+   13615175065,
+   13294909974,
+   13474127479,
+   13615175063,
+   1529358872,
+   13418632248,
+   8087489390,
+   8713025369
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.9067551 50.0821634, 19.9070759 50.0821332, 19.9073418 50.0821186, 19.9138641 50.0818858, 19.914023 50.0818705, 19.9141439 50.0818692, 19.9141681 50.0818673, 19.9141928 50.0818631, 19.9142131 50.0818567, 19.9142238 50.0818505, 19.914232 50.0818363, 19.9142647 50.0817719, 19.9142908 50.0817341, 19.9150182 50.0816865)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=22690912 (2026-11-12)",
+  "case": "motor_vehicle_no",
+  "osm_id": 22690912,
+  "osm_timestamp": "2026-08-29 08:48:14+00:00",
+  "highway": "service",
+  "tags": "{\"cycleway:both\": \"shared_lane\", \"cycleway:both:lane\": \"pictogram\", \"highway\": \"service\", \"lit\": \"yes\", \"motor_vehicle\": \"no\", \"smoothness\": \"good\", \"surface\": \"asphalt\"}",
+  "node_ids": [
+   243365288,
+   4358695198,
+   11034167733,
+   11034167732,
+   11034167731,
+   11034167730,
+   8462588210,
+   243365289,
+   11034167734,
+   11034167735,
+   5311034428
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.9747252 50.0848787, 19.9748135 50.0849113, 19.9748488 50.0849246, 19.9748773 50.0849395, 19.9749023 50.0849578, 19.9749183 50.0849748, 19.974932 50.0849943, 19.9749614 50.0850788, 19.9749718 50.0850935, 19.9749867 50.0851073, 19.9750107 50.085122)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=19796385 (2026-11-12)",
+  "case": "bridge",
+  "osm_id": 19796385,
+  "osm_timestamp": "2026-03-09 09:39:18+00:00",
+  "highway": "motorway",
+  "tags": "{\"bridge\": \"yes\", \"highway\": \"motorway\", \"highway:category:pl\": \"1\", \"highway:class:pl\": \"A\", \"int_ref\": \"E 40;E 77\", \"lanes\": \"3\", \"layer\": \"1\", \"maxaxleload\": \"11.5\", \"maxspeed\": \"140\", \"maxspeed:bus\": \"80\", \"maxspeed:conditional\": \"110 @ (Mo-Fr 06:00-18:00)\", \"maxspeed:hgv\": \"80\", \"maxspeed:trailer\": \"80\", \"oneway\": \"yes\", \"placement\": \"right_of:1\", \"ref\": \"A4;52\", \"source:maxaxleload\": \"Dz.U. 2011 nr 222 poz. 1321 Art. 2 pkt. 11\", \"source:maxspeed\": \"PL:motorway\", \"source:toll\": \"Rozporządzenie Rady Ministrów z dnia 6 lipca 2016 r.\", \"source:toll:url\": \"http://dziennikustaw.gov.pl/du/2016/1049/D2016000104901.pdf\", \"source:width\": \"ortofoto\", \"surface\": \"asphalt\", \"toll\": \"no\", \"toll:bus\": \"yes\", \"toll:hgv\": \"yes\", \"turn:lanes\": \"through|through|merge_to_left\", \"width\": \"10.5\"}",
+  "node_ids": [
+   30371700,
+   30371705,
+   30371707
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8101637 50.0723048, 19.8102449 50.0719808, 19.8103429 50.0714935)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=19801536 (2026-11-12)",
+  "case": "layer_minus1",
+  "osm_id": 19801536,
+  "osm_timestamp": "2023-04-28 12:21:57+00:00",
+  "highway": "tertiary",
+  "tags": "{\"cycleway:both\": \"no\", \"foot\": \"no\", \"highway\": \"tertiary\", \"highway:category:pl\": \"3\", \"lanes\": \"4\", \"lanes:backward\": \"2\", \"lanes:forward\": \"2\", \"layer\": \"-1\", \"lit\": \"yes\", \"maxheight\": \"3.3\", \"maxspeed\": \"40\", \"name\": \"Wrocławska\", \"parking:condition:both\": \"no_stopping\", \"shoulder\": \"no\", \"sidewalk\": \"no\", \"surface\": \"asphalt\", \"tunnel\": \"yes\", \"turn:lanes:backward\": \"left|through;right\", \"turn:lanes:forward\": \"left|through;right\", \"unsigned_ref\": \"2266K\"}",
+  "node_ids": [
+   206351227,
+   206351228
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.9153777 50.0818472, 19.915423 50.0822108)"
+ },
+ {
+  "_source": "osm_roads.parquet osm_id=4757978 (2026-11-12)",
+  "case": "lit_no",
+  "osm_id": 4757978,
+  "osm_timestamp": "2026-03-09 09:41:09+00:00",
+  "highway": "motorway",
+  "tags": "{\"dual_carriageway\": \"yes\", \"hazard\": \"low_flying_aircraft\", \"highway\": \"motorway\", \"highway:category:pl\": \"1\", \"highway:class:pl\": \"A\", \"int_ref\": \"E 40;E 77\", \"lanes\": \"3\", \"lit\": \"no\", \"maxaxleload\": \"11.5\", \"maxspeed\": \"140\", \"maxspeed:bus\": \"80\", \"maxspeed:hgv\": \"80\", \"maxspeed:trailer\": \"80\", \"oneway\": \"yes\", \"placement\": \"right_of:1\", \"ref\": \"A4;52\", \"source:maxaxleload\": \"Dz.U. 2011 nr 222 poz. 1321 Art. 2 pkt. 11\", \"source:maxspeed\": \"PL:motorway\", \"source:toll\": \"Rozporządzenie Rady Ministrów z dnia 6 lipca 2016 r.\", \"source:toll:url\": \"http://dziennikustaw.gov.pl/du/2016/1049/D2016000104901.pdf\", \"source:width\": \"ortofoto\", \"surface\": \"asphalt\", \"toll\": \"no\", \"toll:bus\": \"yes\", \"toll:hgv\": \"yes\", \"width\": \"10.5\"}",
+  "node_ids": [
+   206225999,
+   5116644600,
+   5116644603,
+   5116644606,
+   32122059,
+   4259349395,
+   206226001,
+   5116644607,
+   4259349392,
+   206226003,
+   5116644611,
+   2336378647
+  ],
+  "boundary_crossing": false,
+  "geometry_wkt": "LINESTRING (19.8081242 50.0839663, 19.808136 50.0838617, 19.8081398 50.0836242, 19.8080782 50.0820323, 19.8080715 50.0816844, 19.8080794 50.0812506, 19.8080997 50.0809226, 19.8081503 50.0804444, 19.8082342 50.0799387, 19.8083128 50.0795512, 19.8084268 50.0790776, 19.8085426 50.0786282)"
+ }
+]

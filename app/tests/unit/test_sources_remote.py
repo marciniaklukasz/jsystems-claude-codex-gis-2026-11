@@ -1,6 +1,9 @@
 import json
 import urllib.error
 
+import json
+from pathlib import Path
+
 import pytest
 
 from map_qa import sources_remote as sr
@@ -71,9 +74,27 @@ def test_parser_error_is_unavailable():
     assert result.status == "unavailable" and result.reason == "nieoczekiwany kształt odpowiedzi"
 
 
-@pytest.mark.skip(reason="brak capture")
+CAPTURE = Path(__file__).resolve().parents[1] / "fixtures" / "captures" / "2026-11-12_databricks_statement_counts.json"
+
+
 def test_parse_response_capture():
-    assert sr.parse_response(b"captured response")
+    # Mock z capture: tests/fixtures/captures/2026-11-12_databricks_statement_counts.json (TAC-002-04, AGENTS.md)
+    body = json.dumps(json.loads(CAPTURE.read_text(encoding="utf-8"))["body"]).encode()
+    assert sr.parse_response(body) == {"osm_roads": 99768, "overture_segments": 85405, "photos": 561, "photo_road_links": 561, "traffic_signs": 1730}
+
+
+def test_fetch_counts_with_captured_body():
+    body = json.dumps(json.loads(CAPTURE.read_text(encoding="utf-8"))["body"]).encode()
+    r = sr.fetch_counts(_env(), transport=lambda _req: body)
+    assert r.status == "ok" and r.remote["traffic_signs"] == 1730
+
+
+def test_parse_response_failed_state_from_capture():
+    # Capture z jedną podmienioną wartością: status.state = FAILED
+    data = json.loads(CAPTURE.read_text(encoding="utf-8"))["body"]
+    data["status"]["state"] = "FAILED"
+    with pytest.raises(ValueError):
+        sr.parse_response(json.dumps(data).encode())
 
 
 def test_compare_available_and_unavailable():

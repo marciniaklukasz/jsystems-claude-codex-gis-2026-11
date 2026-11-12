@@ -228,3 +228,15 @@ def test_missing_run_file_raises(tmp_path):
     (run_dir / "run.json").unlink()
     with pytest.raises(FileNotFoundError):
         report.write_report(run_dir)
+
+
+def test_photo_href_other_drive_falls_back_to_file_uri(monkeypatch, tmp_path):
+    import os as _os
+
+    def boom(*a, **k):
+        raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+    img = tmp_path / "p.jpg"
+    img.write_bytes(b"x")
+    monkeypatch.setattr(_os.path, "relpath", boom)
+    assert report._photo_href(str(img), tmp_path / "run").startswith("file:///")

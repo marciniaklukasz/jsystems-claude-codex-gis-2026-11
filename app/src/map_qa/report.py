@@ -15,6 +15,14 @@ _HTML = Environment(loader=FileSystemLoader(_TEMPLATES), autoescape=True)
 _LABELS = {"speed": "ograniczenie prędkości", "surface": "nawierzchnia", "lit": "oświetlenie", "junction": "skrzyżowanie"}
 
 
+def _photo_href(local: str, run_dir: Path) -> str:
+    """Ścieżka względna od katalogu runu; inny dysk (Windows) → absolutny URI file:///."""
+    try:
+        return os.path.relpath(local, run_dir).replace("\\", "/")
+    except ValueError:
+        return Path(local).resolve().as_uri()
+
+
 def _thousands(value):
     return f"{int(value):,}".replace(",", " ")
 
@@ -55,7 +63,7 @@ def write_report(run_dir: Path, verify: Callable[[], None] | None = None) -> dic
         for photo_id in row["photo_ids"]:
             attr = (run.get("photo_attribution") or {}).get(photo_id, {})
             local = attr.get("local_path")
-            path = os.path.relpath(local, run_dir).replace("\\", "/") if local and Path(local).exists() else None
+            path = _photo_href(local, run_dir) if local and Path(local).exists() else None
             row["photos"].append({"id": photo_id, "path": path, **attr})
     summary = []
     for attr in sorted({r.get("attribute") for r in records if r.get("attribute")}):

@@ -1,0 +1,133 @@
+{
+ "captured_at": "2026-11-12T16:01:20.115012+00:00",
+ "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+ "kind": "chat",
+ "model": "openai/gpt-6-luna",
+ "sdk": "openrouter==1.3.107",
+ "httpx": "0.28.1",
+ "photo": {
+  "photo_id_not_sent": "panoramax_334a574d-18cb-4c2e-be3f-f99307e080d9",
+  "sha256": "8a5d2d88f6a0c652e082b5c8f1a8c32e49ca6bb37af73b11f6e706a4d940070b",
+  "bytes": 83124
+ },
+ "request": {
+  "method": "POST",
+  "url": "https://openrouter.ai/api/v1/chat/completions",
+  "body": {
+   "messages": [
+    {
+     "content": [
+      {
+       "text": "Street-level photograph. Answer about what is visible.\n\nWhat is the surface of the road on which the camera stands?\nAnswer with exactly one option: paved = Paved: asphalt, concrete or paving blocks.; unpaved = Unpaved: gravel, dirt, grass or similar.; unknown = It cannot be decided from the image.",
+       "type": "text"
+      },
+      {
+       "image_url": {
+        "url": "<image sha256=8a5d2d88f6a0c652e082b5c8f1a8c32e49ca6bb37af73b11f6e706a4d940070b bytes=83124>"
+       },
+       "type": "image_url"
+      }
+     ],
+     "role": "user"
+    }
+   ],
+   "max_tokens": 1024,
+   "model": "openai/gpt-6-luna",
+   "provider": {
+    "allow_fallbacks": false,
+    "require_parameters": true
+   },
+   "reasoning": {
+    "effort": "medium"
+   },
+   "response_format": {
+    "json_schema": {
+     "name": "answer",
+     "schema": {
+      "type": "object",
+      "properties": {
+       "answer": {
+        "type": "string",
+        "enum": [
+         "paved",
+         "unpaved",
+         "unknown"
+        ]
+       }
+      },
+      "required": [
+       "answer"
+      ],
+      "additionalProperties": false
+     },
+     "strict": true
+    },
+    "type": "json_schema"
+   },
+   "stream": false
+  }
+ },
+ "status": 200,
+ "headers": {
+  "date": "Thu, 12 Nov 2026 16:01:19 GMT",
+  "content-type": "application/json",
+  "x-generation-id": "gen-1794499278-YUBJjDhsbCDYVo2bCGHp"
+ },
+ "body": {
+  "id": "gen-1794499278-YUBJjDhsbCDYVo2bCGHp",
+  "object": "chat.completion",
+  "created": 1794499278,
+  "model": "openai/gpt-6-luna",
+  "provider": "OpenAI",
+  "system_fingerprint": null,
+  "service_tier": "default",
+  "choices": [
+   {
+    "index": 0,
+    "logprobs": null,
+    "finish_reason": "stop",
+    "native_finish_reason": "completed",
+    "message": {
+     "role": "assistant",
+     "content": "{\"answer\":\"paved\"}",
+     "refusal": null,
+     "reasoning": null,
+     "reasoning_details": [
+      {
+       "type": "reasoning.encrypted",
+       "data": "gAAAAABq9eLPFQdyMeBAHx-pAxoToINhfcWwzRPDErg96iIF3CMzIh-uY-KjU7AaTLXlFLCkvw975pE7qsBabzghGkLgAx4_d9ldfiAo-rD0tnhMPwtkUBU2Ay3mbDT_VVNwkFJqdvfoNf95meYH7rfR49SSY9U2g85_V5C8JZVRmcT3jkLGdaU30wXtNzHoV0UTThayy2umoI7F7O-QRoKyGQaoF8R9vZKxJ6meFqdOZMoWCddF925A5JagfAEk2wmBD83QTA94FKAHbyNP1sgNkBLX1RBGMwl-1p1FIdqT59Hgcu2Bq1p9FZw7OEEj1Q0zl-ADjhQLDqRc8055FC4qFFcFR3rl486DINQyHkwojL-XeX7c555tg26FpMBH3sNQKwbBoEmfeMpehJu0cx55mDNRyjqv-BDXEBYpUerbjH9WL2HDQXnbpt4xeodbFCsJLySIYWtjMjZx1HD2Y5bDidhVHZAfp4i2v1UIGQyeaCAnfDq0deG3zIXPUhyetoypLbr4IZ2NVIatK0UWS7J59GilxX2hbCt5ZnF4_MHyw40j3_dY0BCtPH0ek9aKJ8wwKo2YHhRTSbgOvNbxuSM2NtzMAU6M_E3sfM9Y53bS3Cpg1qUyDrVfak6Z4CTUgNvkTdGuEzkQE6XxCkn6xjIL3Qq3KL9dc857MhW0SR0pRbQLz7g7mk2NwEmzqi1Ts5b82prizbmNaoVGsi8ufQDFTnsOimkO6AoNdgarWXPawVL2ZVnR-HjBExr5UKbHI-6Ud5ZdbxFeih-0nu0k6e_GZV31jlq-nI-jG1n4hTuQyi_jPKZXZDYkkS0VdSZ3xkKkd2YrbWnMpKJmJf28-l3iwRUKODQBKIumEYunUVI3ldZEb8rzB5iYFT-rjqYQxu073q9uSOsM3qeDOkhsNfjbh8Uosl2Qp6Fv2C5O7W-dhqii8MGXaNUG1ZBbybTnzA84K6-gcdBMH4sKimVHkG938rU-4aQhYHwzhZyGHqtcOrdW-ztACBQME7WA8JqBMR5Z2ucilpB2FtsU-4RWLKw5E36ZxUw-y6GGLlaO1-GkyD_2RIg1CV5B7wEHsd8vpSo_CN8xqkxDfGIhs7a09OrmQEvNQgH34lozRloJRvtYC0hoOeIG6RsYg7qYIs_arhjo1gwIZOonIoNP8XuGSccrXlWcUkMeZ_fgn6k7wxbieKFNmgZekMH8W-WkgcwFv1hRtq0culhi5Ih_xycGzc2XAHZLXXawCwfYtCy0xCZ_sD8xyoLgxWfmj1qDEorSZ-Gn9phj2zD9Cl3VodwC8cuKXVDFkUyjtEwMzn4Kp8Mt8pZzqXl4KnaOANzMaNHNBg4xPIQlj3TZeVM0zrrK7qO1iGX8a4tGEj24kM9Bf1hDVZj5htpjzqeKjYVtG4N1JvHmt2ZhuyRpnD65UC3TKBw-Gt2o8dDWX_5GEIK9um26FNTGeryXfevxMEBHObsv-eDUFHfLf9jHixYbc73hZ8ELcocxzvFjqNouceCoAr9msoEsOyqanakRbK6XkrpfFSFO26n-Ej120Ws5-scmih42On8nmWkuAJ1UjzrWfdZZRF2hUeMGl1TD0JAI5kPECUnaVuQa3gxVa7BA1DQOCq97zMSEpON60LhDDya5dJZUQyM-ugG0QThsgJndm8l8haqrklB0uXiy88cUquP6w7SILo2I8ff08Z1Ykc-JdfWhdG1_zJ9_o_4fd7ljbG9ez_bajh9t7jvCi2ILTbcjz7A66m4FVZoYzlxZtX7fIwQbEpOvVi5ZDpImpTV_zN4KH4FOVklKB6YigRUnk00iG2Zu5t-uExB2zQ-ifcKPQQFyI3A7_S0sY5lYz0_i2vVVxaNMGor7LGJdZERCvkiSa45RyOtaWYo2Ku3BSz-oY6Qw_WrjXBvVb7lKNUcmuH5yM9ksRRwO6_k7WfdFEce0Yu1typ0fb5oYlw==.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC02LWx1bmEtMjAyNjA5MjJ8b3BlbmFpIn0",
+       "format": "openai-responses-v1",
+       "id": "rs_03ad7a955858da0b016af5e2cf856087d18763498c7542ae06",
+       "index": 0
+      }
+     ]
+    }
+   }
+  ],
+  "usage": {
+   "prompt_tokens": 1027,
+   "completion_tokens": 29,
+   "total_tokens": 1056,
+   "cost": 0.000141372,
+   "is_byok": false,
+   "prompt_tokens_details": {
+    "cached_tokens": 0,
+    "cache_write_tokens": 1024,
+    "audio_tokens": 0,
+    "video_tokens": 0
+   },
+   "cost_details": {
+    "upstream_inference_cost": 0.0001428,
+    "upstream_inference_prompt_cost": 0.0001283,
+    "upstream_inference_completions_cost": 1.45e-05
+   },
+   "completion_tokens_details": {
+    "reasoning_tokens": 14,
+    "image_tokens": 0,
+    "audio_tokens": 0
+   }
+  }
+ },
+ "sdk_result": "ChatResult",
+ "sdk_error": null
+}

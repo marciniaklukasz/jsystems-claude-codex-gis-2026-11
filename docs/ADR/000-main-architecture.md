@@ -12,6 +12,7 @@ Pliki szczegółowe:
 | [001-dane-normalizacja-dopasowanie.md](001-dane-normalizacja-dopasowanie.md) | Wczytanie, integralność, CRS, normalizacja `maxspeed`/`speed_limits`/nawierzchni, łączenie zdjęcia z drogą, porównanie atrybutów |
 | [002-odczyt-zdjec-modelami.md](002-odczyt-zdjec-modelami.md) | Kontrakt OpenRouter Decisions, eskalacja do LLM, limity, koszt, cache, capture, ewaluacja |
 | [003-raport-i-dashboard.md](003-raport-i-dashboard.md) | Raport MD/HTML/CSV, dashboard Streamlit, zapis decyzji w SQLite |
+| [004-databricks-cli-dla-agentow.md](004-databricks-cli-dla-agentow.md) | Databricks CLI jako narzędzie agentów (M2): tylko SELECT, sekrety, uprawnienia Claude/Codex |
 
 ---
 

@@ -7,3 +7,6 @@
 
 # Course input data: keep bytes exactly as committed (sizes and SHA-256 in sources.json)
 course-materials/exercise-data/** -text
+
+# Test fixtures copied from course data and API captures: keep bytes exact (TAC-001-01, ADR-002 §4.5)
+app/tests/fixtures/** -text

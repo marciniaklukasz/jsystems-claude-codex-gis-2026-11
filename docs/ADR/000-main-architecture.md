@@ -337,6 +337,6 @@ TDD dla każdego etapu planu: test z kryterium PRD → uruchomienie i oczekiwane
 ---
 
 ## 11. Otwarte kwestie
-- **Hash a CRLF (blokuje krok 1):** przy `core.autocrlf=true` pliki CSV/GeoJSON w kopii roboczej mają CRLF i SHA-256 niezgodny z `sources.json` (blob w Git jest zgodny). Wybrano (2026-11-12, plan krok 0c) regułę `course-materials/exercise-data/** -text` w `.gitattributes` i ponowny checkout; odrzucono normalizację końców linii w `ingest`. Do wykonania w kroku 0c — `.gitattributes` jeszcze bez tej reguły.
+- **Hash a CRLF (blokuje krok 1):** przy `core.autocrlf=true` pliki CSV/GeoJSON w kopii roboczej mają CRLF i SHA-256 niezgodny z `sources.json` (blob w Git jest zgodny). Wybrano (2026-11-12, plan krok 0c) regułę `course-materials/exercise-data/** -text` w `.gitattributes` i ponowny checkout; odrzucono normalizację końców linii w `ingest`. Wykonane 2026-11-12: 8/8 plików zgodnych z `sources.json`.
 - ~~Porównanie liczności z Databricks~~ — wykonane 2026-11-12 (profil, „Pliki lokalne a Databricks”): 99 768 / 85 405 / 561 / 561 / 1 730, wszystkie zgodne. Geometria w tabelach to WKB bez SRID; `compare-counts` porównuje tylko liczności, więc D-02 bez zmian.
 - Potwierdzić w SDK `timeout_ms` dla `decisions.create` i nazwy argumentów klienta (D-03).

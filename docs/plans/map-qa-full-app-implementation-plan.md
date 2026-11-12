@@ -57,7 +57,8 @@ codex exec review -m gpt-6.1-sol --base 63974fe --title "Milestone A review" -o 
 ```
 - `-s workspace-write`: zapis tylko w katalogu roboczym; `approval_policy="never"` odrzuca akcje wymagające zgody zamiast wisieć. Reguły `.codex/rules/course.rules` (np. `rm`, `env`, force-push = forbidden) obowiązują dalej.
 - `--json` daje strumień zdarzeń do logu, `--output-schema <plik>` wymusza ustrukturyzowany raport (opcjonalnie).
-- **Do sprawdzenia w T0.2:** czy `--base` przyjmuje SHA (help: `--base <BRANCH>`; jeśli nie — O tworzy lokalną gałąź `review-base` na `63974fe`; `--commit` przegląda tylko jeden commit). Czy sandbox `workspace-write` blokuje zapis do `.git/` (jeśli nie — zakaz Git tylko w briefie + kontrola `git log` po każdym workerze).
+- **Wynik T0.2 (2026-11-12):** sandbox `workspace-write` **blokuje zapis do `.git/`** (`git commit` → `Unable to create .git/index.lock: Permission denied`) dla CL i CS. `uv` w sandboksie nie może zapisać cache w `%LOCALAPPDATA%` (os error 5) — każde wywołanie workera Codex dostaje `-c 'shell_environment_policy.set={UV_CACHE_DIR="D:/jsystems-claude-codex-gis-2026-11/.agent-briefs/out/uv-cache"}'` (katalog ignorowany); z tym `uv run` działa (Python 3.12.16). OpenCode (`opencode run` bez `--auto`) w trybie headless nie dał żadnego wyjścia przez > 10 min i został zatrzymany — zadania OC przechodzą na CL (§8). Subagent H mimo zakazu w briefie **wykonał próbę** `git commit`; zablokował ją klasyfikator trybu auto Claude Code — brief nie wystarcza, H dostaje tylko zadania bez potrzeby Git, a O kontroluje `git reflog` po każdym zadaniu.
+- **Do sprawdzenia w T0.2 (pierwotnie):** czy `--base` przyjmuje SHA (help: `--base <BRANCH>`; jeśli nie — O tworzy lokalną gałąź `review-base` na `63974fe`; `--commit` przegląda tylko jeden commit). Czy sandbox `workspace-write` blokuje zapis do `.git/` (jeśli nie — zakaz Git tylko w briefie + kontrola `git log` po każdym workerze).
 
 ### OpenCode (`opencode run`)
 ```bash

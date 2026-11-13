@@ -164,6 +164,7 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 **Rejected alternatives:** `score` — wartości znaku nie są skalą; `noul` — tylko tak/nie, wymagałby wielu pytań na jedną wartość.
 **Consequences:** (+) jeden mechanizm dla czterech pytań. (−) próg 0,7 nieskalibrowany na tak małej próbie.
 **Review trigger:** pokrycie na walidacji < 30% lub > 95%.
+**Wyzwalacz zadziałał (próby 2026-11-12/13):** pokrycie 1,0 dla wszystkich pytań (model decyzyjny zwraca prawdopodobieństwa bliskie 1); przegląd progu `abstain_threshold` i sposobu abstencji — decyzja człowieka przed kolejną wersją pytań.
 
 ### D-202: Retry wyłączone, timeout 40 s, wyłączenie modelu po błędzie
 **Status:** Accepted · **Data:** 2026-11-03

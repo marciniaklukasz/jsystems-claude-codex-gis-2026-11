@@ -12,10 +12,24 @@ build/
 skills-lock.json
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
 .playwright-cli
 
-# Private agent briefs and Java build artifacts
-.agent-briefs/
+# Agent brief outputs (briefs are committed) and Java build artifacts
+.agent-briefs/out/
 **/target/
 *.class
 /.idea
+/.claude/worktrees
+
+# map-qa run outputs (ADR-000 §3)
+reports/map-qa/runs/
+
+# pytest temp dir used by sandboxed Codex workers
+app/.pytest-tmp/
+
+# temp dirs created by sandboxed Codex workers
+app/.pytest-tmp*/
+app/.debug-run/
+app/.review-*/

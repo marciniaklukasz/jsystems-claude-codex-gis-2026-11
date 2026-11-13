@@ -3,7 +3,7 @@
 **Data:** 2026-11-03
 **Status:** Accepted
 **PRD:** [docs/PRD.md](../PRD.md)
-**Profil danych:** [reports/map-qa/profile.md](../../reports/map-qa/profile.md) (krok 0b, 2026-11-03) potwierdza liczby z sekcji 5.1 i schemat Overture. Otwarta sprawa z profilu: hashe plików tekstowych a CRLF na Windows (sekcja 11).
+**Profil danych:** [reports/map-qa/profile.md](../../reports/map-qa/profile.md) (krok 0b, 2026-11-03, uzupełnienie Databricks 2026-11-12) potwierdza liczby z sekcji 5.1 i schemat Overture. Liczności pięciu tabel `workspace.map_qa` są równe plikom lokalnym. Sprawa z profilu (hashe plików tekstowych a CRLF na Windows) rozwiązana 2026-11-12 (sekcja 11). Poprawki po audycie spójności 2026-11-12 (P1–P7): §5.2, §6, §9.3, §10.
 
 Pliki szczegółowe:
 
@@ -12,6 +12,7 @@ Pliki szczegółowe:
 | [001-dane-normalizacja-dopasowanie.md](001-dane-normalizacja-dopasowanie.md) | Wczytanie, integralność, CRS, normalizacja `maxspeed`/`speed_limits`/nawierzchni, łączenie zdjęcia z drogą, porównanie atrybutów |
 | [002-odczyt-zdjec-modelami.md](002-odczyt-zdjec-modelami.md) | Kontrakt OpenRouter Decisions, eskalacja do LLM, limity, koszt, cache, capture, ewaluacja |
 | [003-raport-i-dashboard.md](003-raport-i-dashboard.md) | Raport MD/HTML/CSV, dashboard Streamlit, zapis decyzji w SQLite |
+| [004-databricks-cli-dla-agentow.md](004-databricks-cli-dla-agentow.md) | Databricks CLI jako narzędzie agentów (M2): tylko SELECT, sekrety, uprawnienia Claude/Codex |
 
 ---
 
@@ -43,6 +44,8 @@ Wersje sprawdzone w PyPI 2026-11-03. Implementujący agent przypina je w `app/py
 | SQLite | biblioteka standardowa `sqlite3` | https://docs.python.org/3.12/library/sqlite3.html | Decyzje, cache, budżet |
 | Databricks SQL Statement Execution API 2.0 | — | https://docs.databricks.com/aws/en/dev-tools/sql-execution-tutorial | Opcjonalne porównanie liczności |
 
+Zależności `app/pyproject.toml` (TAC-05, uzupełnienie 2026-11-12): geopandas, shapely, pyproj, pyarrow, pandas (używana bezpośrednio do CSV; wersja rozwiązana przez `uv add` zgodnie z geopandas, przypięta `==`), openrouter, jinja2, streamlit, Pillow; pytest jako zależność deweloperska. DuckDB (tylko profil, D-01), Playwright CLI, uv i Python nie są zależnościami pakietu.
+
 Niezweryfikowane w dokumentacji (sprawdzić przed użyciem, nie zgadywać): parametr `timeout_ms` w `alpha.decisions.create`, nazwy argumentów konstruktora klienta SDK, położenie `provider.require_parameters` w chat, strony modeli `openai/gpt-6-luna-decisions` i `typesafe/jev-1.14` (404 na stronie modelu; cena potwierdzona przez publiczny endpoint `/api/v1/models/{id}/endpoints`).
 
 ---
@@ -69,6 +72,8 @@ Lokalny monolit: jeden pakiet Pythona, dwa punkty wejścia (CLI i dashboard). Br
 
 Wejścia w `course-materials/exercise-data/map-qa/` są tylko do odczytu.
 
+Ścieżki spoza `app/` (`reports/...`, `course-materials/...`) są rozwiązywane względem korzenia repozytorium, nie bieżącego katalogu (polecenia uruchamia się z `app/`). `config` wyznacza korzeń jako katalog nadrzędny `app/` (decyzja 2026-11-12, P7).
+
 ### Stos technologiczny
 
 | Warstwa | Technologia | Powód |
@@ -77,7 +82,7 @@ Wejścia w `course-materials/exercise-data/map-qa/` są tylko do odczytu.
 | Profil i agregacje | DuckDB spatial | Szybkie liczności na 100 tys. dróg bez ładowania do pamięci; nie w ścieżce pipeline'u |
 | Źródło danych | Lokalne GeoParquet/CSV | Działa offline, ma hashe w `sources.json` |
 | Źródło opcjonalne | Databricks SQL Statement Execution API przez `urllib` | Pięć zapytań `count(*)`; brak nowej zależności |
-| Model decyzyjny | `openai/gpt-6-luna-decisions` (główny), `typesafe/jev-1.14` (porównawczy) | Pytanie `choice` zwraca prawdopodobieństwa do progu abstencji |
+| Model decyzyjny | `typesafe/jev-1.14` (główny), `openai/gpt-6-luna-decisions` (porównawczy); oba w `thresholds.toml` (D-04, zmiana 2026-11-12) | Pytanie `choice` zwraca prawdopodobieństwa do progu abstencji |
 | LLM drugiego stopnia | `openai/gpt-6-luna` przez chat, `reasoning.effort=medium`, structured output | Obsługuje obrazy, reasoning i `response_format`; tani |
 | Klient API | Oficjalny SDK `openrouter` 1.3.107 | Typowane odpowiedzi i błędy; retry wyłączone jawnie |
 | Raport | Jinja2 (autoescape dla HTML) + pandas CSV | Tagi OSM to niezaufany tekst; jeden szablon na format |
@@ -103,7 +108,8 @@ Kierunek zależności: `cli` → (`ingest`, `matching`, `compare`, `vision`, `ev
 | `store` | Schemat SQLite i operacje: decyzje, cache, budżet, runy | — |
 | `sources_remote` | Opcjonalne liczności z Databricks | `config` |
 | `cli` | Komendy i kody wyjścia | wszystkie powyżej |
-| `dashboard/app.py` | UI Streamlit | `store`, `config` |
+| `dashboard_data` | Logika dashboardu bez Streamlit: wybór runu, filtry, tabele, szczegóły (testowalna jednostkowo; dodane 2026-11-12) | `store`, `config`, `compare` (stałe etykiet) |
+| `dashboard/app.py` | UI Streamlit | `dashboard_data`, `store`, `config` |
 
 ---
 
@@ -120,10 +126,10 @@ Kierunek zależności: `cli` → (`ingest`, `matching`, `compare`, `vision`, `ev
 | Encja | Kluczowe pola | Relacje | Trwałość |
 |---|---|---|---|
 | `Run` | `run_id` (czas UTC + krótki hash), etap, limity, wersja pytań, wersje źródeł, CRS, status | ma `Candidate`, `VisionReading` | SQLite `runs` + katalog runu |
-| `Candidate` | `candidate_id` (hash z run_id, osm_id, overture_id, atrybut), `osm_id`, `overture_id?`, atrybut, surowe wartości OSM i Overture (tekst/JSON), wartości znormalizowane, daty źródeł, `photo_id?`, kategoria, lista przyczyn, opis powodu | należy do `Run`; ma 0..1 `VisionReading` na pytanie | `candidates.parquet` + CSV w katalogu runu |
+| `Candidate` | `candidate_id` (hash z run_id, osm_id, posortowane `overture_ids`, atrybut), `osm_id`, `overture_ids` (lista, może być pusta), atrybut, surowe wartości OSM i Overture (tekst/JSON), wartości znormalizowane, daty źródeł, `photo_ids` (lista), kategoria, lista przyczyn, opis powodu | należy do `Run`; ma 0..1 `VisionReading` na pytanie | `candidates.parquet` + CSV w katalogu runu |
 | `LinkAssessment` | `photo_id`, `osm_way_id?`, `overture_id?`, dystans m (przeliczony), `bearing_diff`, `match_method`, flagi wejściowe, `is_uncertain`, przyczyny | łączy zdjęcie z `Candidate` | w `candidates.parquet` |
 | `VisionReading` | `photo_id`, pytanie, stopień (`decision`/`fallback`/`manual`), model, odpowiedź, prawdopodobieństwa, `confidence`, przyczyna, `image_sha256`, `cache_hit`, koszt | należy do `Run` | `readings.parquet` + SQLite cache |
-| `Decision` | `candidate_key` (bez run_id: osm_id, overture_id, atrybut), decyzja, wartość proponowana, komentarz, autor, czas UTC | odnosi się do kandydata w kolejnych runach | SQLite `decisions`, bezterminowo |
+| `Decision` | `candidate_key` (bez run_id: osm_id, posortowane `overture_ids`, atrybut; jak ADR-003 §3.2), decyzja, wartość proponowana, komentarz, autor, czas UTC | odnosi się do kandydata w kolejnych runach | SQLite `decisions`, bezterminowo |
 | `ModelCacheEntry` | klucz: `image_sha256` + `model` + `question_id` + `questions_version`; odpowiedź JSON bez sekretów, czas | — | SQLite `model_cache` |
 | `BudgetLedger` | `run_id`, `model`, liczba wysłanych żądań, liczba błędów, suma kosztu USD, `disabled` | należy do `Run` | SQLite `budget_ledger` |
 
@@ -132,14 +138,15 @@ Kierunek zależności: `cli` → (`ingest`, `matching`, `compare`, `vision`, `ev
 ## 6. Kontrakty interfejsów
 
 ### CLI `map-qa check`
-- **Wejście:** `--stage {1,2}` (wymagane), `--decision-limit N` (domyślnie 0, maks. 25), `--comparison-limit N` (domyślnie 0, maks. 5), `--fallback-limit N` (domyślnie 0, maks. 10), `--max-cost-usd X` (domyślnie 0), `--out` (domyślnie `reports/map-qa/runs/`).
+- **Wejście:** `--stage {1,2}` (wymagane; etap 2 jest nadzbiorem etapu 1: prędkość, nawierzchnia, oświetlenie, skrzyżowanie — decyzja 2026-11-12, P4), `--decision-limit N` (domyślnie 0, maks. 25), `--comparison-limit N` (domyślnie 0, maks. 5), `--fallback-limit N` (domyślnie 0, maks. 10), `--max-cost-usd X` (domyślnie 0), `--out` (domyślnie `<repo>/reports/map-qa/runs/`), `--data-dir` (domyślnie `<repo>/course-materials/exercise-data/map-qa/`), `--db` (domyślnie `<repo>/course-materials/exercise-data/map-qa/data/map_qa.db`). `--data-dir` i `--db` służą testom (kopia danych, SQLite w `tmp_path`); `<repo>` = korzeń repozytorium (§3, P7).
 - **Walidacja:** limit powyżej maksimum lub limit > 0 przy `--max-cost-usd 0` → kod 2 i komunikat po polsku, przed wczytaniem danych.
-- **Wyjście:** katalog runu z `report.md`, `report.html`, `candidates.csv`, `candidates.parquet`, `readings.parquet`, `sample_manifest.csv` (gdy limit > 0), `run.json`; podsumowanie na stdout.
-- **Kody wyjścia:** 0 sukces (także bez modelu i przy niedostępnych źródłach opcjonalnych), 1 niezgodny hash lub brak pliku wejściowego, 2 błędne argumenty, 3 nieoczekiwany błąd. Przy kodzie ≠ 0 katalog runu nie zawiera raportu.
+- **Wyjście:** katalog runu z `report.md`, `report.html`, `candidates.csv`, `candidates.parquet`, `readings.parquet`, `links.parquet` (`LinkAssessment`, uzupełnienie 2026-11-12 po review R-A), `sample_manifest.csv` (gdy limit > 0), `run.json`; podsumowanie na stdout. Raport zawsze ma sekcję „Ograniczenia” z wpisem „Databricks: nie odpytywany w kontroli (D-02)” i stanem OpenRouter (brak budżetu, brak klucza albo błąd) — AC-05.
+- **Kody wyjścia:** 0 sukces (także bez modelu i przy niedostępnych źródłach opcjonalnych), 1 niezgodny hash lub brak pliku wejściowego (także przy kontroli hashy po runie, AC-01), 2 błędne argumenty, 3 nieoczekiwany błąd. Przy kodzie ≠ 0 katalog runu nie zawiera raportu: raport powstaje w plikach tymczasowych, końcowa kontrola hashy wejść odbywa się przed zmianą ich nazw (ADR-003 §5).
 
 ### CLI `map-qa compare-counts`
 - **Wejście:** zmienne `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_SQL_WAREHOUSE_ID`.
 - **Wyjście:** tabela liczności plik vs tabela dla pięciu tabel `workspace.map_qa`; brak zmiennych lub błąd HTTP → wpis „Ograniczenia” i kod 0.
+- **Zakres:** komenda zostaje w aplikacji (decyzja 2026-11-12, P3; pytanie 1 profilu). Testy bez sieci obejmują brak zmiennych i błąd transportu; parsowanie odpowiedzi testuje się dopiero na mocku z bezpiecznego capture (AGENTS.md), do tego czasu test pominięty z powodem „brak capture”.
 
 ### Dashboard
 - `uv run streamlit run dashboard/app.py` z katalogu `app/`; czyta najnowszy run i SQLite. Kontrakt UI w ADR-003.
@@ -196,13 +203,13 @@ Aplikacja sprawdza tylko obecność zmiennych; nigdy nie wypisuje, nie loguje i 
 **Review trigger:** SDK nie pozwala ustawić timeoutu dla `decisions.create` (niezweryfikowane) — wtedy surowy POST przez `urllib` dla Decisions.
 
 ### D-04: Modele
-**Status:** Accepted · **Data:** 2026-11-03
-**Context:** PRD: model główny (25 żądań), porównawczy (5), drugi stopień (10).
-**Decision:** Główny `openai/gpt-6-luna-decisions` ($0.10/M tokenów wejścia); porównawczy `typesafe/jev-1.14` ($0.042/M); drugi stopień `openai/gpt-6-luna` przez chat ($0.10/M wejście, $0.50/M wyjście), `reasoning.effort = medium`.
+**Status:** Accepted (zmieniona 2026-11-12, wytyczne prowadzącego) · **Data:** 2026-11-03
+**Context:** PRD: model główny (25 żądań), porównawczy (5), drugi stopień (10). Prowadzący 2026-11-12: „Model decyzyjny: `typesafe/jev-1.14`; opcjonalnie zamiast Jev: `openai/gpt-6-luna-decisions`”; LLM dla chatu: `openai/gpt-6-luna`; tylko endpointy OpenRouter.
+**Decision:** Główny `typesafe/jev-1.14` ($0.042/M wejście, $0 wyjście, kontekst 262K); porównawczy `openai/gpt-6-luna-decisions` ($0.10/M wejście, $0 wyjście, kontekst 1.1M); oba multimodalne. Identyfikatory modelu głównego i porównawczego są w `config/thresholds.toml` (`decision_model`, `comparison_model`), więc zamiana ról nie wymaga zmiany kodu; zmiana modelu zmienia klucz cache (AC-22). drugi stopień `openai/gpt-6-luna` przez chat ($0.10/M wejście, $0.50/M wyjście), `reasoning.effort = medium`.
 **Rejected alternatives:**
-- Jev jako główny: tańszy, ale wymaga obrazów 256–1568 px i JPEG/PNG; zostawiamy go do porównania na tych samych zdjęciach.
+- Luna Decisions jako główny (pierwotna decyzja 2026-11-03): odrzucone 2026-11-12 zgodnie ze wskazaniem prowadzącego; Jev jest 2,4× tańszy na wejściu, a jego wymagania obrazu (JPEG/PNG, bok 256–1568 px) spełnia przygotowanie obrazu z ADR-002 §4.6. Luna Decisions zostaje modelem porównawczym.
 - `google/gemini-3.8-flash` jako drugi stopień: niezależna rodzina modeli, ale ~7,5× droższe wejście.
-**Consequences:** (+) koszt próby rzędu centów. (−) drugi stopień z tej samej rodziny co główny może powielać jego błędy.
+**Consequences:** (+) koszt próby rzędu centów. (+) od 2026-11-12 drugi stopień (`openai/gpt-6-luna`) jest z innej rodziny niż model główny (Jev), więc rzadziej powiela jego błędy. (−) model porównawczy Luna Decisions i drugi stopień są z tej samej rodziny OpenAI.
 **Review trigger:** drugi stopień rozstrzyga < 20% eskalacji w próbie walidacyjnej albo model zniknie z `/api/v1/models`.
 
 ### D-05: SQLite dla stanu
@@ -286,7 +293,7 @@ sequenceDiagram
     I-->>C: OK, liczności 99768 / 85405 / 561
     C->>M: CRS 2180, połączenia, porównanie
     M-->>C: kandydaci z kategoriami
-    Note over C: limity = 0, brak wywołań modelu,<br/>odczyty: model_unavailable
+    Note over C: limity = 0, brak wywołań modelu i manifestu,<br/>dowód ze zdjęcia: model_unavailable
     C->>R: zapisz MD, HTML, CSV
     R-->>A: podsumowanie i ścieżka runu, kod 0
 ```
@@ -318,11 +325,11 @@ TDD dla każdego etapu planu: test z kryterium PRD → uruchomienie i oczekiwane
 |---|---|---|---|
 | Unit | Funkcje czyste i moduły z mockami | `normalize`, flagi `matching`, kategorie `compare`, budżet, cache, walidacja odpowiedzi modelu | pytest |
 | Integration | Prawdziwe wiersze danych i SQLite w katalogu tymczasowym; mock tylko OpenRouter (z capture) | `ingest` na plikach, CRS i dystanse, łańcuch eskalacji, zapis raportu | pytest, `tmp_path` |
-| E2E | Bez mocków | Rzeczywiste CLI na plikach map-qa; dashboard przez Playwright CLI; jedno płatne wywołanie tylko z przydziałem | uv, Playwright CLI |
+| E2E | Bez mocków | Rzeczywiste CLI na plikach map-qa; dashboard przez Playwright CLI; prawdziwe wywołania Luna Decisions, Jev i Luna LLM w ramach przydziału prowadzącego (2026-11-12, łącznie ≤ 1 USD) | uv, Playwright CLI |
 
 ### Kluczowe scenariusze (przekrojowe)
 - **Integralność:** zmieniony bajt w kopii pliku → kod 1 i brak raportu; hashe wejść identyczne przed i po runie.
-- **Bez budżetu:** run z domyślnymi limitami → 0 żądań HTTP (transport, który zgłasza błąd przy każdym wywołaniu), kod 0, wszystkie odczyty `model_unavailable`.
+- **Bez budżetu:** run z domyślnymi limitami → 0 żądań HTTP (transport, który zgłasza błąd przy każdym wywołaniu), kod 0, brak manifestu próbki; pary, w których zdjęcie byłoby jedynym dowodem, mają przyczynę `model_unavailable` (ADR-001 §3.5).
 - **Liczności:** raport zawiera 99 768 / 85 405 / 561.
 - Scenariusze obszarowe: ADR-001 §8, ADR-002 §8, ADR-003 §8.
 
@@ -336,6 +343,7 @@ TDD dla każdego etapu planu: test z kryterium PRD → uruchomienie i oczekiwane
 ---
 
 ## 11. Otwarte kwestie
-- **Hash a CRLF (blokuje krok 1):** przy `core.autocrlf=true` pliki CSV/GeoJSON w kopii roboczej mają CRLF i SHA-256 niezgodny z `sources.json` (blob w Git jest zgodny). Decyzja: reguła `.gitattributes` dla danych albo normalizacja końców linii w `ingest` — profil 0b, „Decyzje do podjęcia” pkt 1.
-- Porównanie liczności z Databricks — do wykonania z tokenem.
+- **Implementacja 2026-11-12 (plan orkiestracji):** run zapisuje się w SQLite (`runs`) przed zmianą nazwy katalogu `.partial` → `<run_id>`; błąd zapisu daje kod 3 bez opublikowanego raportu (review R-A). Dashboard przyjmuje ścieżki jako argumenty skryptu: `uv run streamlit run dashboard/app.py -- --runs-dir <katalog> --db <plik>` (domyślnie jak w §6).
+- **Hash a CRLF (rozwiązane 2026-11-12; wcześniej blokowało krok 1):** przy `core.autocrlf=true` pliki CSV/GeoJSON w kopii roboczej mają CRLF i SHA-256 niezgodny z `sources.json` (blob w Git jest zgodny). Wybrano (2026-11-12, plan krok 0c) regułę `course-materials/exercise-data/** -text` w `.gitattributes` i ponowny checkout; odrzucono normalizację końców linii w `ingest`. Wykonane 2026-11-12: 8/8 plików zgodnych z `sources.json`.
+- ~~Porównanie liczności z Databricks~~ — wykonane 2026-11-12 (profil, „Pliki lokalne a Databricks”): 99 768 / 85 405 / 561 / 561 / 1 730, wszystkie zgodne. Geometria w tabelach to WKB bez SRID; `compare-counts` porównuje tylko liczności, więc D-02 bez zmian.
 - Potwierdzić w SDK `timeout_ms` dla `decisions.create` i nazwy argumentów klienta (D-03).

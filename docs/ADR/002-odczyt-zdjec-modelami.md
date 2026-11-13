@@ -21,9 +21,26 @@ Moduły `vision` i `evaluation`: wybór próbki, przygotowanie obrazu, kontrakt 
 | SDK Python | `/openrouterteam/python-sdk`; https://openrouter.ai/docs/client-sdks/python/sdks/decisions/README | Pakiet `openrouter==1.3.107`; `alpha.decisions.create(...)`, `chat.send(...)`; parametr `retries`; domyślnie backoff do 1 h |
 | Reasoning | https://openrouter.ai/docs/use-cases/reasoning-tokens | `reasoning.effort` ∈ {…, `medium`, …}; reasoning dzieli budżet tokenów wyjścia z odpowiedzią |
 | Structured outputs | https://openrouter.ai/docs/features/structured-outputs | `response_format` typu `json_schema` ze `strict: true` |
-| Ceny | `GET https://openrouter.ai/api/v1/models/{id}/endpoints` | Luna Decisions $0.10/M wejście, $0 wyjście; Jev 1.14 $0.042/M; `openai/gpt-6-luna` $0.10/M wejście, $0.50/M wyjście |
+| Ceny | `GET https://openrouter.ai/api/v1/models/{id}/endpoints`; https://openrouter.ai/typesafe/jev-1.14, https://openrouter.ai/openai/gpt-6-luna-decisions | Jev 1.14 $0.042/M wejście, $0 wyjście, kontekst 262K; Luna Decisions $0.10/M wejście, $0 wyjście, kontekst 1.1M; oba multimodalne (obraz jako wejście); `openai/gpt-6-luna` $0.10/M wejście, $0.50/M wyjście |
 
 **Do potwierdzenia przed kodem (nie zgadywać):** `timeout_ms` w `alpha.decisions.create`; nazwy argumentów konstruktora `OpenRouter`; położenie `provider.require_parameters` w `chat.send`; czy chat zwraca `usage.cost`; czy SDK udostępnia nagłówki odpowiedzi.
+
+**Wynik weryfikacji SDK 1.3.107 (T5.2, 2026-11-12, kod zainstalowanego pakietu):**
+
+| Pytanie | Wynik | Źródło |
+|---|---|---|
+| Konstruktor | `OpenRouter(api_key=, server_url=, client=, retry_config=, timeout_ms=)`; domyślny serwer `https://openrouter.ai/api/v1` | `openrouter/sdk.py`, `sdkconfiguration.py` |
+| Retry | `RetryConfig("none", BackoffStrategy(...), False)`; per wywołanie `retries=`; domyślnie backoff do 1 h z ponawianiem błędów połączenia | `openrouter/utils/retries.py`, `decisions.py` |
+| `timeout_ms` w `alpha.decisions.create` | **potwierdzony**, per wywołanie — D-03 bez zmian (surowy POST niepotrzebny) | `openrouter/decisions.py` |
+| Pytanie `choice` | `{"type": "choice", "instructions": <tekst>, "criteria": {<opcja>: <opis lub null>}}` — opcje to klucze `criteria` | `components/decisionschoicequestion.py` |
+| Obraz w Decisions | `state` = dowolny JSON (tekst, obiekt, lista); obraz jako część `image_url` albo przez mapę `assets` (`data_base64` bez prefiksu, `format`) z referencją w `state` | `components/decisionsrequest.py`, `decisionsimageasset.py` |
+| Odpowiedź | `answers[qid].choice`, `.probabilities`, `.confidence`; `usage.cost` opcjonalne | `components/decisionsresponse.py`, `decisionschoiceanswer.py` |
+| Chat | `chat.send(model, messages, reasoning, response_format, max_tokens, provider, retries, timeout_ms)`; `provider.require_parameters` w `ProviderPreferences`; `stream` domyślnie `False`; `usage.cost` opcjonalne | `openrouter/chat.py`, `components/chatrequest.py`, `providerpreferences.py`, `chatusage.py` |
+| Nagłówki odpowiedzi | Metody zwracają model Pydantic bez nagłówków; dostęp przez własny `httpx.Client` (event hooks) przekazany jako `client=` | `openrouter/httpclient.py` |
+| Transport testowy | `OpenRouter(client=httpx.Client(transport=httpx.MockTransport(...)))` — bez sieci | `openrouter/httpclient.py` |
+| Błędy | klasy per status w `openrouter.errors` (np. `BadRequestResponseError`, `ServiceUnavailableResponseError`); timeout/połączenie = wyjątki `httpx` | `openrouter/decisions.py`, `errors/__init__.py` |
+
+**Kontrakt połączenia (uzupełnienie 2026-11-12, decyzja użytkownika):** wszystkie trzy modele (`openai/gpt-6-luna-decisions`, `typesafe/jev-1.14`, `openai/gpt-6-luna`) są wywoływane **wyłącznie przez OpenRouter**: Decisions → `https://openrouter.ai/api/alpha/decisions`, chat → `https://openrouter.ai/api/v1/chat/completions` (przez SDK `openrouter`, domyślny serwer SDK; `server_url` nie jest konfigurowalny z CLI ani `thresholds.toml`). Jedynym kluczem jest `OPENROUTER_API_KEY` czytany z `os.environ` (zmienna ustawiona na poziomie użytkownika); aplikacja nie czyta `.env`, nie używa `OPENAI_API_KEY` ani klienta OpenAI. Test jednostkowy sprawdza, że skonfigurowany klient wskazuje host `openrouter.ai`, a capture (§4.5) zapisuje rzeczywisty URL endpointu.
 
 ---
 
@@ -47,7 +64,7 @@ Stan runu: tylko SQLite (`budget_ledger`, `model_cache`) i pliki runu. Brak stan
 ## 4. Kontrakty i struktury danych
 
 ### 4.1. Pytania (`questions_version = 1`, w `thresholds.toml`)
-Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Teksty po angielsku, neutralne, bez nazw miejsc, identyfikatorów i danych mapy.
+Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Wersja 1 obejmuje wszystkie cztery pytania; etap 2 używa tej samej `questions_version = 1`, bez podnoszenia wersji (decyzja 2026-11-12, P5). Teksty po angielsku, neutralne, bez nazw miejsc, identyfikatorów i danych mapy.
 
 | `question_id` | Etap | Opcje (`criteria`) | Znaczenie |
 |---|---|---|---|
@@ -58,19 +75,25 @@ Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Teksty po 
 
 Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 
+**`questions_version = 2` (decyzja użytkownika 2026-11-13, po próbach v1):** pytanie `junction_visible` ograniczone do ok. 25 m przed aparatem (spójnie z promieniem mapy, ADR-001 §4.4); `speed_limit_value` — przy kilku znakach największy, znak przekreślony/zaklejony = `unreadable`. Opcje bez zmian. **Zasady próby v2, zapisane przed pierwszym żądaniem:** progi z `[evaluation]` bez zmian; ocena końcowa AC-23 wyłącznie na podziale `test` (pary `validation` służyły do obserwacji v1 i nie są podstawą oceny); wynik zapisany bez względu na to, czy przekroczy próg.
+
+**Wynik próby v2 (2026-11-13; runy `20261113T085829Z-e95198` etap 1, `20261113T090041Z-4df5c6` etap 2; 63 żądania, 0,0091 USD), podział `test`:** prędkość 6 par, trafność 0,833 — **próg spełniony**; nawierzchnia 7 par, 1,0 — spełniony; oświetlenie 4 pary, 1,0 — spełniony; skrzyżowanie 3 pary, 0,0 — **próg niespełniony**. Przyczyna (Manual QA): etykiety `junction_visible` mają definicję bez limitu odległości („a visible joining/splitting vehicle road”), a pytanie v2 ogranicza ją do ~25 m — model odpowiada „no” dla odległych łącznic oznaczonych w etykietach jako „yes”. Dalsze zmiany pytania po obejrzeniu podziału `test` byłyby dopasowaniem do zbioru testowego — wymagają nowych etykiet z definicją zgodną z promieniem mapy (decyzja człowieka). Pokrycie 1,0 utrzymuje się (wyzwalacz D-201).
+
 ### 4.2. Żądanie Decisions
-- `model`: `openai/gpt-6-luna-decisions` lub `typesafe/jev-1.14`.
+- `model`: główny `typesafe/jev-1.14`, porównawczy `openai/gpt-6-luna-decisions` (ADR-000 D-04, zmiana 2026-11-12); wartości z `thresholds.toml` (`decision_model`, `comparison_model`).
 - `state`: tablica dokładnie dwóch części: tekst „Street-level photograph. Answer about what is visible.” i obraz jako data URL JPEG. Nic więcej (PRD AC-17): bez nazwy pliku, `photo_id`, etykiet, detekcji, atrybutów mapy, współrzędnych.
 - `questions`: mapa z jednym kluczem `question_id`.
 - `provider`: `allow_fallbacks = false` (bez cichej zmiany dostawcy w trakcie próby).
 - Bez `session_id`, `user`, `trace`.
 - Wywołanie: retry strategii `none`, timeout 40 s.
 
+**Potwierdzone capture T5.2b (2026-11-12):** `state` = [część tekstowa, część `image_url` z data URL JPEG] jest przyjmowany przez Jev i Luna Decisions (HTTP 200); niepoprawne `criteria` (pusty słownik) → HTTP 422 (nie 400). Pytanie `choice` w SDK: `{"type": "choice", "instructions", "criteria": {opcja: opis}}`.
+
 ### 4.3. Odpowiedź i interpretacja
 - Odczyt: `answers[question_id].choice`, `.probabilities`, `.confidence`; `usage.cost`.
 - **Pewny** odczyt modelu głównego: `choice` ∈ opcje, `choice` ≠ `unknown`, max(`probabilities`) ≥ próg `abstain_threshold` (start 0,7, AC-20a) i połączenie zdjęcia pewne (ADR-001 §3.4).
 - Inaczej → eskalacja (§4.4). Błąd HTTP / wyjątek SDK / timeout → model główny wyłączony do końca runu (AC-20), pytanie eskaluje.
-- Model porównawczy (Jev) nie wpływa na kategorie ani eskalację; jego wynik trafia tylko do tabeli porównania.
+- Model porównawczy (domyślnie Luna Decisions) nie wpływa na kategorie ani eskalację; jego wynik trafia tylko do tabeli porównania.
 
 ### 4.4. Drugi stopień (`chat.send`)
 - `model`: `openai/gpt-6-luna`; `reasoning.effort = medium`; limit tokenów wyjścia z `thresholds.toml` (start 1024).
@@ -79,23 +102,25 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - **Pewny** odczyt: poprawny JSON, `answer` ∈ opcje, ≠ `unknown`. Niepewność sygnalizuje wyłącznie `unknown` — bez samooceny liczbowej.
 - `unknown` → kolejka ręczna, przyczyna `abstain`. Pusta lub ucięta odpowiedź, JSON niezgodny ze schematem, błąd, timeout, brak limitu → `model_unavailable` (AC-20d). Pewna odpowiedź nie usuwa `ambiguous_link` (PRD AC-07).
 - Każdy niepewny odczyt eskaluje najwyżej raz (AC-20b).
+- Niepoprawna treść odpowiedzi drugiego stopnia (zły JSON, odpowiedź spoza listy) → `model_unavailable` dla tej pary, **bez** wyłączania modelu; model wyłącza tylko błąd żądania (HTTP, timeout, wyjątek SDK) — AC-20 (doprecyzowanie 2026-11-12).
+- Zdjęcia `signs/` bez pary z mapą (`evaluation_only`) nie mają warunku połączenia w AC-20a (brak połączenia ≠ połączenie niepewne).
 
 ### 4.5. Capture i mock
-- Pierwsze rzeczywiste żądanie dla każdej pary (endpoint, model) w próbie z przydziałem jest zapisywane w `app/tests/fixtures/captures/<data>_<model>.json` **zanim** powstanie jakikolwiek mock.
+- Pierwsze rzeczywiste żądanie dla każdej pary (endpoint, model) — osobne zadanie capture przed implementacją `vision` (plan orkiestracji T5.2b; przydział prowadzącego 2026-11-12) — jest zapisywane w `app/tests/fixtures/captures/<data>_<model>.json` **zanim** powstanie jakikolwiek mock.
 - Zawartość: data UTC, endpoint, wersja SDK, model, status HTTP, nagłówki z listy dozwolonej (`content-type`, `date`, identyfikator żądania; inne odrzucone; jeśli SDK nie udostępnia nagłówków — pole z adnotacją „niedostępne przez SDK”), pełne ciało odpowiedzi, treść żądania z obrazem zastąpionym przez `sha256` i rozmiar.
 - Przed zapisem: test odrzuca plik, jeśli zawiera nagłówek `authorization`, ciąg `sk-or-` albo wartość zmiennej `OPENROUTER_API_KEY`.
-- Mocki w testach jednostkowych i integracyjnych zwracają wyłącznie ciała z capture (ewentualnie z podmienioną jedną wartością opisaną w teście). Bez capture → testy integracyjne modelu są pomijane z jawnym powodem, nie zastępowane wymyśloną odpowiedzią.
+- Mocki w testach jednostkowych i integracyjnych zwracają wyłącznie ciała z capture (ewentualnie z podmienioną jedną wartością opisaną w teście). Bez capture → testy integracyjne modelu są pomijane z jawnym powodem, nie zastępowane wymyśloną odpowiedzią. Testy manualne i E2E nie używają mocków: wywołują prawdziwe endpointy (uzupełnienie 2026-11-12, polecenie prowadzącego).
 
 ### 4.6. Obraz
 - Źródło: pełny kadr. Zdjęcia `signs/photos/` (prędkość), `offline/` lub `data/photos/` po `download_photos.py --verify-only` (pozostałe). Zdjęcie bez lokalnego pliku z poprawnym SHA-256 nie wchodzi do próbki.
-- Najdłuższy bok > 1568 px → zmniejszenie proporcjonalne do 1568 px (Pillow 12.0.0, LANCZOS, JPEG quality 90). Bez wycinania. Mniejsze obrazy — bajty bez zmian.
+- Najdłuższy bok > 1568 px → zmniejszenie proporcjonalne do 1568 px (Pillow 12.0.0, LANCZOS, JPEG quality 90). Bez wycinania. Mniejsze obrazy — bajty bez zmian. Najkrótszy bok < 256 px albo format inny niż JPEG/PNG → zdjęcie poza próbką z licznikiem (wymaganie Jev jako modelu głównego, 2026-11-12).
 - Klucz cache i logi używają `image_sha256` wysłanych bajtów; base64 nigdy nie trafia do logów, raportu ani capture.
 
 ### 4.7. Próbka (`sample_manifest.csv`)
 - Jednostka: para (zdjęcie, pytanie) z etykietą `certain` dla tego pytania: prędkość z `signs/labels.csv` (`sign_value`), pozostałe z `reference_labels.csv`.
 - Podział walidacja/test po `sequence`: SHA-256 identyfikatora sekwencji, parzysty pierwszy bajt → walidacja, nieparzysty → test.
 - Kolejność: pary posortowane po SHA-256 (`photo_id` + `question_id`); pytania etapu naprzemiennie, aż do limitu żądań modelu głównego. Etap 1 przy limicie 25: 13 par prędkości + 12 nawierzchni.
-- Model porównawczy: pierwsze `comparison-limit` pary z manifestu.
+- Model porównawczy: pierwsze `comparison-limit` pary z manifestu, które zostały już wysłane do modelu głównego (PRD AC-19); po wyłączeniu modelu głównego (AC-20) model porównawczy nie dostaje nowych par (uzupełnienie 2026-11-12).
 - Kolumny: `photo_id`, `question_id`, `split`, `sequence`, `image_sha256`, `order`. Plik zapisany i zsynchronizowany na dysk przed pierwszym żądaniem; nie zmienia się w trakcie runu.
 - Etykiety referencyjne są używane tylko przez `SampleBuilder` (wybór) i `Evaluator`; nie trafiają do żadnego komponentu, który buduje żądanie.
 
@@ -106,6 +131,8 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Odmowa budżetu → odczyt `model_unavailable`, bez żądania.
 - Cache hit nie zwiększa licznika.
 
+**Uzupełnienie po capture T5.2b (2026-11-12):** konto OpenRouter działa w trybie BYOK — `usage.cost` bywa 0, a rzeczywisty koszt jest w `usage.cost_details.upstream_inference_cost`. Koszt żądania liczony jako `max(usage.cost, upstream_inference_cost)`; brak obu → `reserve`. Rezerwa wchodzi tylko do sprawdzenia przed żądaniem i zastępuje koszt wyłącznie przy jego braku.
+
 ### 4.9. Cache
 - Klucz: `image_sha256` + `model` + `question_id` + `questions_version` (AC-22). Wartość: znormalizowany odczyt i pełne ciało odpowiedzi bez sekretów.
 - Zapisywane są tylko odpowiedzi poprawne (także `unknown` i niepewne); błędów nie cache'ujemy.
@@ -113,6 +140,10 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 ### 4.10. Ewaluacja (`evaluation`)
 - Dla każdego pytania i podziału: liczba par, pokrycie = pewne odczyty / pary, trafność = poprawne pewne odczyty / pewne odczyty, osobno dla modelu głównego, po eskalacji i dla modelu porównawczego.
 - Raport zawiera liczbę wykluczonych etykiet `uncertain` (AC-23) i liczbę odczytów rozstrzygniętych przez każdy stopień (AC-20e).
+- Model porównawczy: pokrycie i trafność liczone tylko na parach, które faktycznie dostał; ponowny run z cache odtwarza jego odczyty bez żądań (2026-11-12).
+- **Próba 2026-11-12 (T6):** limity 25/5/10, 40 żądań, 0 błędów, 0,006367 USD; ponowny run 0 żądań. Prędkość: pokrycie 1,0, trafność 0,769 (próg 0,8 niespełniony; 2 z 3 niezgodności to etykiety z wycinka znaku innego niż B-33, a na pełnym kadrze widać inny znak B-33 — ryzyko z PRD §12); nawierzchnia: pokrycie 1,0, trafność 1,0. Progi nie zostały zmienione po próbie (AC-23).
+- **Próba etapu 2 (2026-11-13):** `--stage 2`, limity 25/5/10: 25 nowych żądań (reszta z cache), 0 błędów, 0,0032 USD. Oświetlenie: pokrycie 1,0, trafność 0,833 (próg spełniony); skrzyżowanie: pokrycie 1,0, trafność 0,333 (próg niespełniony; 6 par — bez wniosków o modelach, PRD §12). Ryzyko: pytanie `junction_visible` nie ogranicza odległości, a mapa jest sprawdzana w promieniu 25 m — model odpowiada „yes” dla odległego odgałęzienia (Manual QA `panoramax_c92cd930…`). Rozważyć `questions_version = 2` z ograniczeniem do najbliższego otoczenia aparatu.
+- Zdjęcie próbki jest odrzucane, gdy SHA-256 pliku różni się od manifestu (`photos.csv`/`signs.csv`, kolumna `sha256`); pominięte pary są licznikiem wykluczeń „próbka modelu: …” (review R-F).
 - Progi akceptacji zapisane w `thresholds.toml` i zatwierdzone commitem przed runem z przydziałem; raport zapisuje hash commitu pliku progów.
 
 ---
@@ -137,6 +168,7 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 **Rejected alternatives:** `score` — wartości znaku nie są skalą; `noul` — tylko tak/nie, wymagałby wielu pytań na jedną wartość.
 **Consequences:** (+) jeden mechanizm dla czterech pytań. (−) próg 0,7 nieskalibrowany na tak małej próbie.
 **Review trigger:** pokrycie na walidacji < 30% lub > 95%.
+**Wyzwalacz zadziałał (próby 2026-11-12/13):** pokrycie 1,0 dla wszystkich pytań (model decyzyjny zwraca prawdopodobieństwa bliskie 1); przegląd progu `abstain_threshold` i sposobu abstencji — decyzja człowieka przed kolejną wersją pytań.
 
 ### D-202: Retry wyłączone, timeout 40 s, wyłączenie modelu po błędzie
 **Status:** Accepted · **Data:** 2026-11-03
@@ -245,7 +277,7 @@ sequenceDiagram
 
 ## 8. Strategia testów
 
-Kolejność pracy w etapie M6: testy walidacji, limitu, cache i abstencji (Red) → minimum kodu (Green) → zgoda użytkownika i przydział → jedno rzeczywiste żądanie i capture → dopiero potem testy oparte na mocku z capture → mała próba.
+Kolejność pracy w etapie M6: testy walidacji, limitu, cache i abstencji (Red) → minimum kodu (Green) → jedno rzeczywiste żądanie na parę (endpoint, model) i capture (przydział prowadzącego 2026-11-12) → dopiero potem testy oparte na mocku z capture → mała próba.
 
 | Scenariusz | Typ | Wejście | Oczekiwany wynik | Przypadki brzegowe |
 |---|---|---|---|---|
@@ -262,7 +294,7 @@ Kolejność pracy w etapie M6: testy walidacji, limitu, cache i abstencji (Red) 
 | Próbka | Unit | etykiety z 2 sekwencji | cała sekwencja w jednym podziale; manifest zapisany przed żądaniem | etykieta `uncertain` pominięta |
 | Capture bez sekretów | Unit | capture z nagłówkiem `authorization` | zapis odrzucony | ciąg `sk-or-` w ciele |
 | Ewaluacja | Unit | 4 pary, 3 pewne, 2 poprawne | pokrycie 0,75, trafność 0,67 | 0 pewnych → trafność „brak danych”, nie 0 |
-| Rzeczywista próba | E2E (tylko z przydziałem) | `--decision-limit 1` | 1 żądanie, capture zapisany, koszt w raporcie | brak klucza → `model_unavailable`, kod 0 |
+| Rzeczywista próba | E2E (prawdziwe API, bez mocków; przydział ≤ 1 USD) | `--decision-limit 1` | 1 żądanie, capture zapisany, koszt w raporcie | brak klucza → `model_unavailable`, kod 0 |
 
 ### Techniczne kryteria akceptacji
 - **TAC-002-01:** Licznik `sent` w `budget_ledger` po runie równa się liczbie żądań zarejestrowanych przez transport testowy, dla każdego modelu.

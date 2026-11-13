@@ -1,0 +1,6 @@
+# source: nearest_osm.csv, photo_id in selection, extracted 2026-11-12
+photo_id,osm_way_id,distance_m,heading_diff_deg,highway,maxspeed,maxspeed_forward,maxspeed_backward,osm_timestamp,source,osm_snapshot_timestamp,search_radius_m,candidate_count,match_flags,maxspeed_conditional,oneway,overpass_endpoint,context_endpoint,context_retrieved_at
+mapillary_1931009810597411,187014751,7.844,1.225,residential,40,,,2026-06-07 17:20:26+00:00,osm_roads.parquet,2026-11-01T21:21:36Z,25,1,,,,,,
+mapillary_1428012997566511,735276532,2.182,27.425,unclassified,,,,2024-08-19 06:28:53+00:00,osm_roads.parquet,2026-11-01T21:21:36Z,25,12,ambiguous_candidates,,,,,
+mapillary_1602686671072776,1416953488,26.025,1.209,trunk,100,,,2026-08-01 12:45:08+00:00,osm_roads.parquet,2026-11-01T21:21:36Z,100,5,outside_standard_25m,,no,,,
+mapillary_940500342204329,258017468,0.175,4.375,motorway,120,,,2025-12-26T00:02:20Z,osm_api,,150,26,,,yes,,https://api.openstreetmap.org/api/0.6/map,2026-11-03T08:26:30.125791+00:00

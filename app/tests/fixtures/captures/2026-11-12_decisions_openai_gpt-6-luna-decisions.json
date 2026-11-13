@@ -1,0 +1,82 @@
+{
+ "captured_at": "2026-11-12T16:01:16.890853+00:00",
+ "endpoint": "https://openrouter.ai/api/alpha/decisions",
+ "kind": "decisions",
+ "model": "openai/gpt-6-luna-decisions",
+ "sdk": "openrouter==1.3.107",
+ "httpx": "0.28.1",
+ "photo": {
+  "photo_id_not_sent": "panoramax_334a574d-18cb-4c2e-be3f-f99307e080d9",
+  "sha256": "8a5d2d88f6a0c652e082b5c8f1a8c32e49ca6bb37af73b11f6e706a4d940070b",
+  "bytes": 83124
+ },
+ "request": {
+  "method": "POST",
+  "url": "https://openrouter.ai/api/alpha/decisions",
+  "body": {
+   "model": "openai/gpt-6-luna-decisions",
+   "questions": {
+    "surface": {
+     "criteria": {
+      "paved": "Paved: asphalt, concrete or paving blocks.",
+      "unpaved": "Unpaved: gravel, dirt, grass or similar.",
+      "unknown": "It cannot be decided from the image."
+     },
+     "instructions": "What is the surface of the road on which the camera stands?",
+     "type": "choice"
+    }
+   },
+   "state": [
+    {
+     "type": "text",
+     "text": "Street-level photograph. Answer about what is visible."
+    },
+    {
+     "type": "image_url",
+     "image_url": {
+      "url": "<image sha256=8a5d2d88f6a0c652e082b5c8f1a8c32e49ca6bb37af73b11f6e706a4d940070b bytes=83124>"
+     }
+    }
+   ],
+   "provider": {
+    "allow_fallbacks": false
+   }
+  }
+ },
+ "status": 200,
+ "headers": {
+  "date": "Thu, 12 Nov 2026 16:01:16 GMT",
+  "content-type": "application/json",
+  "x-generation-id": "gen-dec-1794499276-s8Lp7dEc90WtiaSsJ32u"
+ },
+ "body": {
+  "model": "openai/gpt-6-luna-decisions-20261006",
+  "answers": {
+   "surface": {
+    "type": "choice",
+    "choice": "paved",
+    "probabilities": {
+     "paved": 1,
+     "unpaved": 0,
+     "unknown": 0
+    },
+    "confidence": 1
+   }
+  },
+  "usage": {
+   "input_tokens": 937,
+   "output_tokens": 0,
+   "cost": 0,
+   "is_byok": true,
+   "cost_details": {
+    "upstream_inference_cost": 9.37e-05,
+    "upstream_inference_prompt_cost": 9.37e-05,
+    "upstream_inference_completions_cost": 0
+   }
+  },
+  "id": "gen-dec-1794499276-s8Lp7dEc90WtiaSsJ32u",
+  "provider": "Azure"
+ },
+ "sdk_result": "DecisionsResponse",
+ "sdk_error": null
+}

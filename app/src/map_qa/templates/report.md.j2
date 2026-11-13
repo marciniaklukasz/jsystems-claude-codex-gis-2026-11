@@ -1,0 +1,76 @@
+# Raport kontroli {{ run.created_at }}
+
+- Run: {{ run.run_id }}; etap: {{ run.stage }}; CRS: {{ run.crs }}
+- Wersja pytań: {{ run.questions_version }}; hash commitu progów: {{ run.thresholds_commit }}
+
+## Źródła
+
+| nazwa | wersja | data | licencja |
+|---|---|---|---|
+{% for source in run.sources or [] %}| {{ source.name }} | {{ source.version }} | {{ source.date }} | {{ source.license }} |
+{% endfor %}
+## Liczności wejść
+
+{% for name, count in input_counts.items() %}- {{ name }}: {{ thousands(count) }}
+{% endfor %}
+## Połączenia zdjęć
+
+Pewne: {{ link_counts.certain or 0 }}; niepewne: {{ link_counts.uncertain or 0 }}; bez kandydata: {{ link_counts.no_candidate or 0 }}; razem: {{ link_counts.total or 0 }}. Zdjęcia bez kierunku: {{ link_counts.missing_heading or 0 }}.
+
+## Podsumowanie
+
+| atrybut | zgodne | rozbieżne | do sprawdzenia |
+|---|---:|---:|---:|
+{% for item in summary %}| {{ item.label }} | {{ item.zgodne }} | {{ item['rozbieżne'] }} | {{ item['do sprawdzenia'] }} |
+{% endfor %}
+## Wykluczenia
+
+{% for reason, count in exclusions.items() %}- {{ reason }}: {{ count }}
+{% else %}Brak wykluczeń.
+{% endfor %}
+## Ograniczenia
+
+{% for item in limitations %}- {{ item.source }}: {{ item.reason }}
+{% else %}Brak ograniczeń.
+{% endfor %}
+## Modele
+
+{% if run.usage %}| model | wysłane żądania | błędy | koszt USD |
+|---|---:|---:|---:|
+{% for model, usage in run.usage.items() %}| {{ model }} | {{ usage.sent }} | {{ usage.errors }} | {{ "%.4f"|format(usage.cost_usd) }} |
+{% endfor %}
+Łączny koszt: {{ "%.4f"|format(run.cost_total_usd) }} USD; liczba żądań: {{ run.requests_total }}.
+{% else %}Brak wywołań modelu w tej kontroli.
+{% endif %}
+{% if run.vision_summary %}
+| pytanie | model decyzyjny | drugi stopień | kolejka ręczna | razem |
+|---|---:|---:|---:|---:|
+{% for question, counts in run.vision_summary.items() %}| {{ question }} | {{ counts.decision }} | {{ counts.fallback }} | {{ counts.manual }} | {{ counts.total }} |
+{% endfor %}{% endif %}
+## Ewaluacja
+
+{% if run.evaluation %}{% for question, evaluation in run.evaluation.items() %}### {{ question }}
+
+Trafność i pokrycie (wykluczone etykiety niepewne: {{ evaluation.uncertain_labels_excluded }}):
+
+| split | kto | pary | pewne | poprawne | pokrycie | Trafność |
+|---|---|---:|---:|---:|---:|---:|
+{% for row in evaluation.rows %}| {{ row.split }} | {{ row.who }} | {{ row.pairs }} | {{ row.certain }} | {{ row.correct }} | {{ row.coverage }} | {{ row.accuracy if row.accuracy is not none else "brak danych" }} |
+{% endfor %}{% endfor %}{% else %}Brak danych ewaluacji.
+{% endif %}
+## Odczyty
+
+{% if readings|length %}| photo_id | pytanie | odpowiedź | stopień | model | status | przyczyna |
+|---|---|---|---|---|---|---|
+{% for row in readings %}| {{ row.photo_id }} | {{ row.question_id }} | {{ row.answer }} | {{ row.final_stage }} | {{ row.model }} | {{ row.status }} | {{ row.reason }} |
+{% endfor %}{% else %}Brak odczytów.
+{% endif %}
+## Kandydaci
+
+{% if empty %}Brak kandydatów dla wybranego etapu.
+{% else %}| kategoria | atrybut | candidate_id | OSM id | nazwa | overture_ids | osm_raw | overture_raw | daty | reasons | reason_text | połączenie | photo_reading | zdjęcia |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+{% for c in candidates %}| {{ c.category|mdcell }} | {{ c.attribute|mdcell }} | {{ c.candidate_id|mdcell }} | [{{ c.osm_id }}]({{ c.osm_url }}) | {{ c.name|mdcell }} | {{ c.overture_ids|tojson|mdcell }} | {{ c.osm_raw|mdcell }} | {{ c.overture_raw|mdcell }} | {{ c.osm_timestamp|mdcell }} / {{ c.overture_release|mdcell }} | {{ c.reasons|tojson|mdcell }} | {{ c.reason_text|mdcell }} | {{ (c.link_details or [])|join("; ")|mdcell }} | {{ c.photo_reading|mdcell }} | {% for photo in c.photos %}{% if photo.path %}![{{ photo.id|mdcell }}]({{ photo.path }}){% else %}Zdjęcie niedostępne{% endif %} ({{ (photo.author or "")|mdcell }}, {{ (photo.license or "")|mdcell }}, [źródło]({{ photo.source_url or "" }})) {% endfor %} |
+{% endfor %}{% endif %}
+
+Dane OSM i Overture: ODbL 1.0; zdjęcia: CC BY-SA 4.0 (autorzy przy zdjęciach).

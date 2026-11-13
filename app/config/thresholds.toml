@@ -1,0 +1,96 @@
+# Progi i wersja pytań (ADR-000 §3, ADR-001 §3.4, ADR-002 §4). Zmiana przed końcową próbą = osobny commit (AC-20a, AC-23).
+
+[links]
+max_distance_m = 15.0          # AC-06: dystans > 15 m -> ambiguous_link
+max_bearing_diff_deg = 30.0    # AC-06: różnica kierunku > 30° -> ambiguous_link
+distance_tolerance_m = 1.0     # ADR-001 §3.4 krok 1: link_distance_mismatch
+bearing_tolerance_deg = 1.0    # ADR-001 §3.4 krok 2: link_bearing_mismatch
+tangent_half_length_m = 5.0    # sources.json links.bearing: styczna ±5 m
+junction_radius_m = 25.0       # ADR-001 §4.4
+
+[compare]
+missing_classes = [
+  "motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link",
+  "secondary", "secondary_link", "tertiary", "tertiary_link",
+]
+
+[surface]
+version = 1
+osm_paved = [
+  "asphalt", "concrete", "concrete:plates", "concrete:lanes", "paved", "paving_stones", "sett",
+  "cobblestone", "unhewn_cobblestone", "chipseal", "metal", "wood",
+]
+osm_unpaved = [
+  "unpaved", "gravel", "fine_gravel", "compacted", "dirt", "earth", "ground", "grass", "mud",
+  "sand", "pebblestone", "rock", "woodchips", "grass_paver",
+]
+overture_paved = ["paved", "paving_stones", "metal"]
+overture_unpaved = ["unpaved", "gravel", "dirt"]
+
+[vision]
+questions_version = 2
+decision_model = "typesafe/jev-1.14"
+comparison_model = "openai/gpt-6-luna-decisions"
+fallback_model = "openai/gpt-6-luna"
+fallback_reasoning_effort = "medium"
+fallback_max_tokens = 1024
+abstain_threshold = 0.7        # AC-20a, wartość startowa
+reserve_usd = 0.01             # ADR-002 §4.8
+timeout_s = 40                 # ADR-002 D-202
+max_side_px = 1568             # ADR-002 §4.6
+min_side_px = 256
+state_text = "Street-level photograph. Answer about what is visible."
+
+[evaluation]
+# Progi akceptacji odczytu (AC-23), zapisane przed końcową próbą.
+min_coverage = 0.3
+min_accuracy = 0.8
+
+# Pytania do modeli, questions_version = 2 (ADR-002 §4.1; v2 2026-11-13: skrzyżowanie w otoczeniu aparatu, znak najbliższy). Zmiana tekstu lub opcji → questions_version + 1.
+# Neutralne teksty po angielsku: bez nazw miejsc, identyfikatorów i danych mapy (AC-17).
+[questions.speed_limit_value]
+stage = 1
+instructions = "Look for a round prohibitory speed-limit sign (red ring with a black number in the middle) in the image. If several are visible, answer for the largest one. A sign crossed out or covered with tape counts as unreadable. Which number does it show?"
+[questions.speed_limit_value.criteria]
+"5" = "The sign shows 5."
+"10" = "The sign shows 10."
+"20" = "The sign shows 20."
+"30" = "The sign shows 30."
+"40" = "The sign shows 40."
+"50" = "The sign shows 50."
+"60" = "The sign shows 60."
+"70" = "The sign shows 70."
+"80" = "The sign shows 80."
+"90" = "The sign shows 90."
+"100" = "The sign shows 100."
+"110" = "The sign shows 110."
+"120" = "The sign shows 120."
+"130" = "The sign shows 130."
+"140" = "The sign shows 140."
+none = "No round prohibitory speed-limit sign is visible (zone signs and end-of-limit signs do not count)."
+unreadable = "Such a sign is visible but its number cannot be read."
+unknown = "It cannot be decided from the image."
+
+[questions.surface]
+stage = 1
+instructions = "What is the surface of the road on which the camera stands?"
+[questions.surface.criteria]
+paved = "Paved: asphalt, concrete or paving blocks."
+unpaved = "Unpaved: gravel, dirt, grass or similar."
+unknown = "It cannot be decided from the image."
+
+[questions.street_lighting_visible]
+stage = 2
+instructions = "Is an identifiable street-lamp fixture visible in the image? A pole alone is not enough."
+[questions.street_lighting_visible.criteria]
+yes = "A street-lamp fixture is visible."
+no = "No street-lamp fixture is visible."
+unknown = "It cannot be decided from the image."
+
+[questions.junction_visible]
+stage = 2
+instructions = "Look only at the road surface close to the camera, roughly the first 25 meters ahead. Does another road for vehicles join or split from the road on which the camera stands within that distance? Distant junctions, driveways to single buildings, pedestrian crossings and overpasses do not count."
+[questions.junction_visible.criteria]
+yes = "A junction with another vehicle road is visible."
+no = "No such junction is visible."
+unknown = "It cannot be decided from the image."

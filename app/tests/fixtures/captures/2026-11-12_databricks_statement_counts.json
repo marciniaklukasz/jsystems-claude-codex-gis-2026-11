@@ -1,0 +1,79 @@
+{
+ "captured_at": "2026-11-12T15:58:36.306572+00:00",
+ "target": "Databricks SQL Statement Execution API 2.0 POST /api/2.0/sql/statements/ (host redacted)",
+ "request": {
+  "statement": "SELECT 'osm_roads' AS source, count(*) AS rows FROM workspace.map_qa.osm_roads UNION ALL SELECT 'overture_segments' AS source, count(*) AS rows FROM workspace.map_qa.overture_segments UNION ALL SELECT 'photos' AS source, count(*) AS rows FROM workspace.map_qa.photos UNION ALL SELECT 'photo_road_links' AS source, count(*) AS rows FROM workspace.map_qa.photo_road_links UNION ALL SELECT 'traffic_signs' AS source, count(*) AS rows FROM workspace.map_qa.traffic_signs",
+  "wait_timeout": "30s",
+  "disposition": "INLINE",
+  "format": "JSON_ARRAY"
+ },
+ "status": 200,
+ "headers": {
+  "date": "Thu, 12 Nov 2026 15:58:36 GMT",
+  "content-type": "application/json",
+  "x-request-id": "54358bd8-e30e-4b13-aa2d-33469a6bd82d"
+ },
+ "body": {
+  "statement_id": "01f1deb1-ea5b-1a0a-8fc8-17046853b6b7",
+  "status": {
+   "state": "SUCCEEDED"
+  },
+  "manifest": {
+   "format": "JSON_ARRAY",
+   "schema": {
+    "column_count": 2,
+    "columns": [
+     {
+      "name": "source",
+      "type_text": "STRING",
+      "type_name": "STRING",
+      "position": 0
+     },
+     {
+      "name": "rows",
+      "type_text": "BIGINT",
+      "type_name": "LONG",
+      "position": 1
+     }
+    ]
+   },
+   "total_chunk_count": 1,
+   "chunks": [
+    {
+     "chunk_index": 0,
+     "row_offset": 0,
+     "row_count": 5
+    }
+   ],
+   "total_row_count": 5,
+   "truncated": false
+  },
+  "result": {
+   "chunk_index": 0,
+   "row_offset": 0,
+   "row_count": 5,
+   "data_array": [
+    [
+     "osm_roads",
+     "99768"
+    ],
+    [
+     "overture_segments",
+     "85405"
+    ],
+    [
+     "photos",
+     "561"
+    ],
+    [
+     "photo_road_links",
+     "561"
+    ],
+    [
+     "traffic_signs",
+     "1730"
+    ]
+   ]
+  }
+ }
+}

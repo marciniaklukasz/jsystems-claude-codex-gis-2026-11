@@ -40,6 +40,11 @@ course-materials/    Notes, scripts, examples, research
 3. Confirm the actual application checkout and inspect source, build descriptors, call sites and dependencies before proposing commands or APIs. Identify build, test and startup commands from that project, using its wrapper when available; do not assume a framework, build tool or runtime version.
 4. Establish missing or ambiguous requirements with the user and record agreed application scope in its PRD before implementation. Routine course-document changes do not need an application PRD or ADR.
 
+### Documentation lookup order
+For libraries, frameworks, SDKs, APIs and cloud services, always search Context7 first (MCP, or the Context7 CLI when the MCP server is not configured). Search the internet or other sources only when Context7 does not have the documentation or the information you need.
+
+For a CLI tool, first use its built-in help (`<tool> --help`, `<tool> help <command>`, `<tool> <command> --help` or `man <tool>`) from the installed version. Go to Context7 only when the help does not answer the question, and to the internet or other sources only after that.
+
 ### TDD Rules
 For every feature and bug fix:
 1. Start from the specification, not the existing implementation.

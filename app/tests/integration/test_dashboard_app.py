@@ -122,3 +122,33 @@ def test_save_decision_persists_after_restart_and_to_fix_tab(env):  # AC-28, AC-
     assert len(fix) == 1 and len(fix[0]) == 1
     assert fix[0].iloc[0]["OSM"] == "https://www.openstreetmap.org/way/101" and fix[0].iloc[0]["wartość proponowana"] == "70"
     assert "Brak potwierdzonych przypadków" not in texts(at2)
+
+
+def test_form_does_not_carry_over_to_other_candidate(env):  # R-F: zapis „70” dla c1 nie może trafić do c4
+    runs, db = env
+    at = new_app(runs, db)
+    at.text_input(key="author").set_value("anna")
+    at.selectbox(key="selected").set_value("c1").run()
+    at.radio(key="decision").set_value("potwierdzony błąd mapy")
+    at.text_input(key="proposed").set_value("70")
+    at.text_area(key="comment").set_value("znak 70")
+    at.button(key="save").click().run()
+    at.selectbox(key="selected").set_value("c4").run()
+    assert at.radio(key="decision").value is None
+    assert at.text_input(key="proposed").value == "" and at.text_area(key="comment").value == ""
+    at.button(key="save").click().run()
+    from map_qa import store
+    assert set(store.get_decisions(store.connect(db))) == {"101||speed"}
+
+
+def test_switching_back_prefills_saved_decision(env):
+    runs, db = env
+    at = new_app(runs, db)
+    at.text_input(key="author").set_value("anna")
+    at.selectbox(key="selected").set_value("c2").run()
+    at.radio(key="decision").set_value("niepewne")
+    at.text_area(key="comment").set_value("do weryfikacji")
+    at.button(key="save").click().run()
+    at.selectbox(key="selected").set_value("c1").run()
+    at.selectbox(key="selected").set_value("c2").run()
+    assert at.radio(key="decision").value == "niepewne" and at.text_area(key="comment").value == "do weryfikacji"

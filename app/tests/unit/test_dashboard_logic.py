@@ -113,3 +113,13 @@ def test_to_fix_only_confirmed_with_osm_link_and_proposed(tmp_path):  # AC-29, A
     assert first["wartość proponowana"] == "70" and first["obecna wartość"] == "50" and first["komentarz"] == "znak 70"
     gone = t[t["OSM"] == "https://www.openstreetmap.org/way/999"].iloc[0]
     assert gone["uwagi"] == "brak w bieżącym runie"
+
+
+def test_to_fix_photos_local_only(tmp_path):  # R-F (Codex P2): zdjęcie w zakładce „Do poprawy”
+    conn = store.connect(tmp_path / "t.db")
+    store.save_decision(conn, "104||lit", "confirmed_error", "yes", "lampa", "anna", "R1")
+    data = dd.load_run(make_run(tmp_path / "runs"))
+    items = dd.to_fix_photos(data, store.list_confirmed(conn))
+    assert len(items) == 1 and items[0]["photo_id"] == "p1"
+    assert items[0]["image_bytes"] is None and items[0]["caption"] == "czecko · CC-BY-SA-4.0 · https://panoramax.example/p1"
+    assert "104" in items[0]["label"]

@@ -81,7 +81,13 @@ with overview:
         if current:
             st.markdown(f'Decyzja: {store.DECISION_LABEL[current["decision"]]} · autor {current["author"]} · {current["decided_at"]}')
         options = ["potwierdzony błąd mapy", "brak błędu", "niepewne"]
-        choice = st.radio("Decyzja", options, key="decision", index=None)
+        # formularz należy do wybranego kandydata: przy zmianie wyboru wczytaj jego zapisaną decyzję albo wyczyść pola
+        if st.session_state.get("_form_for") != chosen:
+            st.session_state["_form_for"] = chosen
+            st.session_state["decision"] = store.DECISION_LABEL[current["decision"]] if current else None
+            st.session_state["proposed"] = (current or {}).get("proposed_value") or ""
+            st.session_state["comment"] = (current or {}).get("comment") or ""
+        choice = st.radio("Decyzja", options, key="decision")
         proposed = st.text_input("Wartość proponowana", key="proposed")
         comment = st.text_area("Komentarz", key="comment")
         if st.button("Zapisz", key="save"):
@@ -106,3 +112,9 @@ with fixes:
         st.info("Brak potwierdzonych przypadków")
     else:
         st.dataframe(fixes_df, hide_index=True, column_config={"OSM": st.column_config.LinkColumn("OSM")})
+        # miniatury zdjęć potwierdzonych przypadków (tylko pliki lokalne, AC-25, AC-30)
+        for item in dd.to_fix_photos(data, store.list_confirmed(conn)):
+            if item["image_bytes"] is not None:
+                st.image(item["image_bytes"], caption=f'{item["label"]} — {item["caption"]}', width=320)
+            else:
+                st.caption(f'{item["label"]} — Zdjęcie niedostępne · {item["caption"]}')

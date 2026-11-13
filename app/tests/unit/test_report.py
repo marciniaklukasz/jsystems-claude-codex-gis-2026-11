@@ -269,3 +269,9 @@ def test_vision_summary_shown_even_without_requests(tmp_path):  # AC-20e: brak k
         if p.suffix != ".csv":
             t = p.read_text(encoding="utf-8")
             assert "kolejka ręczna" in t and "Brak wywołań modelu w tej kontroli." in t
+
+
+def test_md_candidate_table_header_and_separator_same_width(tmp_path):  # R-F: tabela GFM
+    md = report.write_report(make_run(tmp_path, [_cand(1, "rozbieżne")]))["md"].read_text(encoding="utf-8").splitlines()
+    i = next(n for n, line in enumerate(md) if line.startswith("| kategoria"))
+    assert md[i].count("|") == md[i + 1].count("|")

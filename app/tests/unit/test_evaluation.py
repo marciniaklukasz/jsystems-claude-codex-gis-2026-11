@@ -43,7 +43,7 @@ def test_comparison_and_text_stripping():
 
 def test_load_labels_from_real_data(data_dir):
     labels = load_labels(data_dir)
-    assert list(labels.columns) == ["photo_id", "question_id", "label", "status", "sequence", "image_path", "author", "license", "source_url"]
+    assert list(labels.columns) == ["photo_id", "question_id", "label", "status", "sequence", "image_path", "expected_sha256", "author", "license", "source_url"]
     speed = labels[labels.question_id == "speed_limit_value"]
     assert len(speed[speed.status == "certain"]) == 115
     assert speed.image_path.map(lambda p: bool(p) and __import__("pathlib").Path(p).is_file()).all()

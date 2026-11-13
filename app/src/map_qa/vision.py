@@ -255,6 +255,9 @@ def build_sample(stage, limit, th, data_dir, labels) -> Sample:
                 try:
                     if not path.is_file():
                         raise ImageRejected("brak lokalnego pliku zdjęcia")
+                    expected = str(meta.get("expected_sha256") or "")
+                    if expected and hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+                        raise ImageRejected("niezgodny hash zdjęcia")  # plik inny niż w manifeście (ADR-002 §4.6)
                     if path not in prepared:
                         prepared[path] = prepare_image(path, th)
                     image = prepared[path]
@@ -417,7 +420,7 @@ def run_vision(conn, *, run_id, stage, limits, th, layers, assessment, data_dir,
                     links[row["photo_id"]] = row["status"]
                 elif row["status"] == "evaluation_only":
                     links.pop(row["photo_id"], None)
-    result.update(photo_paths=sample.photo_paths, attribution=sample.attribution)
+    result.update(photo_paths=sample.photo_paths, attribution=sample.attribution, sample_excluded=dict(sample.excluded))
     if transport is None and "OPENROUTER_API_KEY" not in os.environ:
         result["readings"] = pd.DataFrame([_manual_row(pair, links) for pair in sample.manifest.to_dict("records")],
                                           columns=READING_COLUMNS)

@@ -76,3 +76,29 @@ def test_build_sample_stage2_includes_stage2_questions(data_dir):  # T7.3, ADR-0
     qs = sample.manifest["question_id"].value_counts().to_dict()
     assert set(qs) == {"speed_limit_value", "surface", "street_lighting_visible", "junction_visible"}
     assert len(sample.manifest) == 25 and max(qs.values()) - min(qs.values()) <= 1
+
+
+def test_build_sample_rejects_photo_with_wrong_source_hash(tmp_path):  # R-F (Codex P2), ADR-002 §4.6
+    import hashlib as h
+
+    from vision_support import jpeg_bytes
+
+    good, bad = tmp_path / "good.jpg", tmp_path / "bad.jpg"
+    good.write_bytes(jpeg_bytes(400, 300))
+    bad.write_bytes(jpeg_bytes(400, 301))
+    lab = pd.DataFrame([
+        {"photo_id": "g", "question_id": "surface", "label": "paved", "status": "certain", "sequence": "s1", "image_path": str(good),
+         "expected_sha256": h.sha256(good.read_bytes()).hexdigest(), "author": "a", "license": "l", "source_url": "u"},
+        {"photo_id": "b", "question_id": "surface", "label": "paved", "status": "certain", "sequence": "s2", "image_path": str(bad),
+         "expected_sha256": "0" * 64, "author": "a", "license": "l", "source_url": "u"},
+    ])
+    s = vision.build_sample(1, 5, TH, tmp_path, lab)
+    assert list(s.manifest["photo_id"]) == ["g"]
+    assert s.excluded == {"niezgodny hash zdjęcia": 1}
+
+
+def test_labels_carry_expected_hash(data_dir):
+    from map_qa import evaluation
+
+    lab = evaluation.load_labels(data_dir)
+    assert lab["expected_sha256"].str.len().eq(64).all()

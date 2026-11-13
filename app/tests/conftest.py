@@ -26,4 +26,7 @@ def data_copy(tmp_path: Path) -> Path:
     for p in DATA_DIR.iterdir():
         if p.is_file():
             shutil.copy2(p, dst / p.name)
+    (dst / "signs").mkdir()
+    for name in ("signs.csv", "nearest_osm.csv", "labels.csv"):
+        shutil.copy2(DATA_DIR / "signs" / name, dst / "signs" / name)
     return dst

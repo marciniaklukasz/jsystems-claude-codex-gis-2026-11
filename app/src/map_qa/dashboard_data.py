@@ -121,3 +121,22 @@ def to_fix(data: RunData, confirmed: list[dict]) -> pd.DataFrame:
                      "zdjęcie": caption, "komentarz": d.get("comment", ""), "autor": d.get("author", ""), "czas": d.get("decided_at", ""),
                      "uwagi": "" if r else "brak w bieżącym runie"})
     return pd.DataFrame(rows, columns=["OSM", "atrybut", "obecna wartość", "wartość proponowana", "zdjęcie", "komentarz", "autor", "czas", "uwagi"])
+
+
+def to_fix_photos(data: RunData, confirmed: list[dict]) -> list[dict]:
+    """Zdjęcia potwierdzonych przypadków: bajty tylko z plików lokalnych (AC-30) i podpis atrybucji (AC-25)."""
+    indexed = {r["candidate_key"]: r for r in data.candidates.to_dict("records")}
+    out = []
+    for d in confirmed:
+        r = indexed.get(d["candidate_key"])
+        if not r:
+            continue
+        for pid in list(r.get("photo_ids") or []):
+            a = data.run.get("photo_attribution", {}).get(pid, {})
+            out.append({
+                "photo_id": pid,
+                "label": f'droga {r["osm_id"]} · {ATTRIBUTE_LABEL.get(r["attribute"], r["attribute"])}',
+                "caption": " · ".join(str(a.get(k) or "") for k in ("author", "license", "source_url")),
+                "image_bytes": photo_bytes(a.get("local_path")),
+            })
+    return out

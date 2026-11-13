@@ -257,3 +257,16 @@ def test_link_details_text():  # R-A: szczegóły LinkAssessment przy kandydacie
     assert t == "p1: niepewne, 5.2 m, różnica kierunku 87.9°, przyczyny: bearing_gt_threshold; informacje: camera_against_way_direction"
     row2 = {**row, "status": "certain", "bearing_diff": float("nan"), "reasons": [], "info_flags": []}
     assert cp.link_detail(row2) == "p1: pewne, 5.2 m, różnica kierunku brak"
+
+
+def test_reasons_in_canonical_order():  # R-F P10: kolejność z zamkniętej listy AC-10
+    r1 = cat(overture=None, photos=[photo(None, reading="model_unavailable", pid="a"), photo(1, link="uncertain", pid="b")])
+    r2 = cat(overture=None, photos=[photo(1, link="uncertain", pid="b"), photo(None, reading="model_unavailable", pid="a")])
+    assert r1.reasons == r2.reasons == ["ambiguous_link", "model_unavailable"]
+
+
+def test_split_of_one_street_into_two_ways_is_not_junction():  # R-F P7, ADR-001 §4.4 (stopień węzła ≥ 3)
+    a = {"osm_id": 1, "node_ids": [1, 2], "geometry": LineString([(0, 0), (100, 0)]), "bridge": None, "tunnel": None, "layer": None, "boundary_crossing": False}
+    b = {"osm_id": 2, "node_ids": [2, 3], "geometry": LineString([(100, 0), (200, 0)]), "bridge": None, "tunnel": None, "layer": None, "boundary_crossing": False}
+    ways = gpd.GeoDataFrame([a, b], geometry="geometry", crs=2180)
+    assert cp.map_junction(ways.iloc[0], cp.node_degrees(ways), Point(95, 3), 25.0).value == "no"

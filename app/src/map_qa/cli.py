@@ -110,6 +110,7 @@ def _run_id(stage: int, limits: Limits) -> str:
 def check(stage: int, limits: Limits, out_dir: Path, data_dir: Path, db_path: Path) -> int:
     t0 = time.monotonic()
     partial: Path | None = None
+    conn = None
     try:
         _log(f"Kontrola etapu {stage}: weryfikacja plików wejściowych ({data_dir})")
         ingest.verify_inputs(data_dir)
@@ -132,26 +133,42 @@ def check(stage: int, limits: Limits, out_dir: Path, data_dir: Path, db_path: Pa
         lc = matching.link_counts(assessment)
         _log(f"Połączenia: pewne {lc['certain']}, niepewne {lc['uncertain']}, bez kandydata {lc['no_candidate']} (zdjęcia bez kierunku: {lc['missing_heading']})")
 
+        if (data_dir / "signs" / "signs.csv").exists() and (data_dir / "signs" / "nearest_osm.csv").exists():
+            signs = pd.read_csv(data_dir / "signs" / "signs.csv", encoding="utf-8")
+            nearest = pd.read_csv(data_dir / "signs" / "nearest_osm.csv", dtype=str, keep_default_na=False, encoding="utf-8")
+            sign_links = matching.assess_sign_links(nearest, signs, osm2180, th["links"])
+        else:  # zdjęcia znaków są opcjonalne (poza sources.json)
+            signs = pd.DataFrame(columns=["photo_id", "creator", "license", "source_url"])
+            sign_links = None
+
         conn = store.connect(db_path)
-        vision_result = _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, partial)
+        vision_result = _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, partial, sign_links)
         readings = vision_result["readings"]
 
         _log("Porównanie atrybutów i nadawanie kategorii")
         points = matching.photo_points_2180(layers.photos)
         cand, excl = compare.build_candidates(layers, assessment, readings, stage, th, run_id,
-                                              osm_2180=osm2180, photo_points=points)
+                                              osm_2180=osm2180, photo_points=points, sign_links=sign_links)
+        for reason, n in (vision_result.get("sample_excluded") or {}).items():
+            excl[f"próbka modelu: {reason}"] += n  # AC-16: pary pominięte w próbce
 
         photo_paths = _photo_paths(data_dir, layers.photos)
         photo_paths.update(vision_result.get("photo_paths", {}))
-        listed = cand[cand["category"] != "zgodne"] if len(cand) else cand
-        referenced = {p for ids in listed["photo_ids"] for p in ids} if len(listed) else set()
+        # atrybucja każdego zdjęcia kandydata (także „zgodne”) i odczytu — AC-25 (review R-F)
+        referenced = {p for ids in cand["photo_ids"] for p in ids} if len(cand) else set()
         referenced |= set(readings["photo_id"])
         attrib_src = layers.photos.set_index("photo_id")
+        sign_src = signs.set_index("photo_id")
         attribution = {}
         for pid in sorted(referenced):
             if pid in attrib_src.index:
                 r = attrib_src.loc[pid]
                 attribution[pid] = {"author": r["author"], "license": r["license"], "source_url": r["source_url"], "local_path": photo_paths.get(pid)}
+            elif pid in sign_src.index:
+                r = sign_src.loc[pid]
+                local = data_dir / "signs" / "photos" / f"{pid}.jpg"
+                attribution[pid] = {"author": r["creator"], "license": r["license"], "source_url": r["source_url"],
+                                    "local_path": str(local) if local.exists() else None}
             elif pid in vision_result.get("attribution", {}):
                 attribution[pid] = vision_result["attribution"][pid]
 
@@ -209,11 +226,13 @@ def check(stage: int, limits: Limits, out_dir: Path, data_dir: Path, db_path: Pa
         print(f"Nieoczekiwany błąd: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 3
     finally:
+        if conn is not None:
+            conn.close()
         if partial is not None and partial.exists():
             shutil.rmtree(partial, ignore_errors=True)
 
 
-def _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, run_dir) -> dict:
+def _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, run_dir, sign_links) -> dict:
     """Bez budżetu: zero żądań, brak manifestu (AC-19b, AC-21). Z limitem: próbka, kaskada, ewaluacja (ADR-002)."""
     from map_qa import evaluation, vision
 
@@ -225,10 +244,6 @@ def _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, r
         result["evaluation"] = {}
         return result
     labels = evaluation.load_labels(data_dir)
-    signs = pd.read_csv(data_dir / "signs" / "signs.csv", encoding="utf-8")
-    nearest = pd.read_csv(data_dir / "signs" / "nearest_osm.csv", dtype=str, keep_default_na=False, encoding="utf-8")
-    osm2180 = layers.osm[["osm_id", "highway", "access", "motor_vehicle", "geometry"]].to_crs(2180)
-    sign_links = matching.assess_sign_links(nearest, signs, osm2180, th["links"])
     _log(f"Odczyt zdjęć modelami: limity {limits.decision}/{limits.comparison}/{limits.fallback}, maks. koszt {limits.max_cost_usd} USD")
     result = vision.run_vision(conn, run_id=run_id, stage=stage, limits=limits, th=th, layers=layers,
                                assessment=assessment, data_dir=data_dir, run_dir=run_dir, labels=labels,
@@ -244,8 +259,12 @@ def _run_vision(conn, run_id, stage, limits, th, layers, assessment, data_dir, r
 # --- compare-counts ------------------------------------------------------------------------
 def compare_counts() -> int:
     data_dir = config.DEFAULT_DATA_DIR
-    ingest.verify_inputs(data_dir)
-    layers = ingest.load_layers(data_dir)
+    try:
+        ingest.verify_inputs(data_dir)
+        layers = ingest.load_layers(data_dir)
+    except ingest.InputIntegrityError as exc:
+        print(f"Błąd integralności danych: {exc}", file=sys.stderr)
+        return 1
     local = {"osm_roads": len(layers.osm), "overture_segments": len(layers.overture), "photos": len(layers.photos),
              "photo_road_links": len(layers.links), "traffic_signs": layers.traffic_signs_count}
     remote = sources_remote.fetch_counts()

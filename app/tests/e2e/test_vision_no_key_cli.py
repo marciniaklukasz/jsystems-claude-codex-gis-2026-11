@@ -68,3 +68,11 @@ def test_report_shows_stage_and_attribution_of_sample_photos(run):
     for pid in m["photo_id"]:
         a = meta["photo_attribution"][pid]
         assert a["author"] and a["license"] and a["source_url"]  # AC-25
+
+
+def test_sample_exclusions_counted_in_report(run):  # R-F (Codex P2), AC-16
+    _, d, _ = run
+    meta = json.loads((d / "run.json").read_text(encoding="utf-8"))
+    k = [x for x in meta["exclusions"] if x.startswith("próbka modelu:")]
+    assert k and all(meta["exclusions"][x] > 0 for x in k)
+    assert "próbka modelu:" in (d / "report.md").read_text(encoding="utf-8")

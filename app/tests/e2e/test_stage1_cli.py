@@ -117,3 +117,14 @@ def test_run_recorded_in_store(run):
     c = store.connect(run["db"])
     rid = run["run_dirs"][0].name
     assert store.get_run(c, rid)["status"] == "ok"
+
+
+def test_every_candidate_photo_has_attribution(run):  # R-F P1, AC-25 (także pary „zgodne” i zdjęcia znaków)
+    d = run["run_dirs"][0]
+    meta = json.loads((d / "run.json").read_text(encoding="utf-8"))
+    cand = pd.read_parquet(d / "candidates.parquet")
+    ids = {p for ids in cand["photo_ids"] for p in ids}
+    assert any(p.startswith("mapillary_") for p in ids)
+    for pid in ids:
+        a = meta["photo_attribution"][pid]
+        assert a["author"] and a["license"] and a["source_url"], pid

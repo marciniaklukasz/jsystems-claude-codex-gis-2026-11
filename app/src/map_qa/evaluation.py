@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 
-LABEL_COLUMNS = ["photo_id", "question_id", "label", "status", "sequence", "image_path", "author", "license", "source_url"]
+LABEL_COLUMNS = ["photo_id", "question_id", "label", "status", "sequence", "image_path", "expected_sha256", "author", "license", "source_url"]
 
 
 def _csv(path: Path) -> pd.DataFrame:
@@ -32,7 +32,7 @@ def load_labels(data_dir: str | Path) -> pd.DataFrame:
         speed_rows.append({
             "photo_id": photo_id, "question_id": "speed_limit_value", "label": row["sign_value"], "status": row["status"],
             "sequence": sign.get("sequence", ""), "image_path": _image_path(root, root / "signs" / "photos" / f"{photo_id}.jpg"),
-            "author": sign.get("creator", ""), "license": sign.get("license", ""), "source_url": sign.get("source_url", ""),
+            "expected_sha256": sign.get("sha256", ""), "author": sign.get("creator", ""), "license": sign.get("license", ""), "source_url": sign.get("source_url", ""),
         })
 
     photos = _csv(root / "photos.csv").set_index("photo_id", drop=False)
@@ -49,7 +49,7 @@ def load_labels(data_dir: str | Path) -> pd.DataFrame:
             "photo_id": photo_id, "question_id": row["question"], "label": row["label"], "status": row["status"],
             "sequence": photo.get("sequence", ""),
             "image_path": _image_path(root, root / "offline" / filename, root / "data" / "photos" / filename) if filename else None,
-            "author": photo.get("author", ""), "license": photo.get("license", ""), "source_url": photo.get("source_url", ""),
+            "expected_sha256": photo.get("sha256", ""), "author": photo.get("author", ""), "license": photo.get("license", ""), "source_url": photo.get("source_url", ""),
         })
     return pd.DataFrame(rows, columns=LABEL_COLUMNS)
 

@@ -160,6 +160,7 @@ def _from_reasons(reasons, attribute, highway, osm, major, notes=()):
 
 
 def _queue(reasons, attribute, highway, osm, extra=""):
+    reasons = sorted(dict.fromkeys(reasons), key=REASONS.index)  # kolejność kanoniczna (AC-10)
     parts = [REASON_TEXT[r] for r in reasons]
     if extra:
         parts.append(extra)
@@ -187,7 +188,7 @@ def combine_results(results: list[PairResult]) -> PairResult:
             return PairResult(cat, [], None, "; ".join(dict.fromkeys(r.reason_text for r in hit)))
     queue = [r for r in results if r.category == "do sprawdzenia"]
     if queue:
-        reasons = list(dict.fromkeys(x for r in queue for x in r.reasons))
+        reasons = sorted(dict.fromkeys(x for r in queue for x in r.reasons), key=REASONS.index)
         return PairResult("do sprawdzenia", reasons, None, "; ".join(dict.fromkeys(r.reason_text for r in queue)))
     return PairResult(None, [], results[0].exclusion if results else EXCL_NO_EVIDENCE, "")
 
@@ -216,9 +217,12 @@ def aggregate_overture(values: list[Normalized]) -> Normalized | None:
 
 # --- skrzyżowanie na mapie (§4.4) ---------------------------------------------------------
 def node_degrees(ways: pd.DataFrame) -> Counter:
+    """Stopień węzła w grafie dróg: liczba odcinków sieci dochodzących do węzła (koniec drogi 1, węzeł wewnętrzny 2)."""
     c: Counter = Counter()
     for nodes in ways["node_ids"]:
-        c.update(set(int(n) for n in nodes))
+        ids = [int(n) for n in nodes]
+        for i, n in enumerate(ids):
+            c[n] += 1 if i in (0, len(ids) - 1) else 2
     return c
 
 
@@ -244,7 +248,7 @@ def map_junction(way, degrees: Counter, camera_2180: Point, radius_m: float) -> 
             if Point(coords[idx]).distance(proj) <= radius_m:
                 return Normalized("not_comparable", None, "boundary", raw)
     for nid, xy in zip(nodes, coords):
-        if degrees.get(nid, 0) >= 2 and Point(xy).distance(proj) <= radius_m:
+        if degrees.get(nid, 0) >= 3 and Point(xy).distance(proj) <= radius_m:
             return Normalized("value", "yes", "junction", raw)
     return Normalized("value", "no", "junction", raw)
 
@@ -283,7 +287,8 @@ def readings_index(readings: pd.DataFrame | None) -> dict[tuple[str, str], dict]
 
 def build_candidates(layers, assessment: pd.DataFrame, readings: pd.DataFrame | None, stage: int,
                      th: dict, run_id: str, osm_2180: gpd.GeoDataFrame | None = None,
-                     photo_points: gpd.GeoDataFrame | None = None) -> tuple[pd.DataFrame, Counter]:
+                     photo_points: gpd.GeoDataFrame | None = None,
+                     sign_links: pd.DataFrame | None = None) -> tuple[pd.DataFrame, Counter]:
     """Zwraca (kandydaci, liczniki wykluczeń). Każda para (droga, atrybut) jest kandydatem albo wykluczeniem (AC-16)."""
     osm = layers.osm
     missing_classes = th["compare"]["missing_classes"]
@@ -298,6 +303,13 @@ def build_candidates(layers, assessment: pd.DataFrame, readings: pd.DataFrame | 
     photos_by_way: dict[int, list[dict]] = {}
     for r in linked.to_dict("records"):
         photos_by_way.setdefault(int(r["osm_way_id"]), []).append(r)
+    # zdjęcia znaków `signs/` z połączeniem: dowód tylko dla prędkości, poza licznikami AC-09 (ADR-001 §3.4)
+    signs_by_way: dict[int, list[dict]] = {}
+    if sign_links is not None and len(sign_links):
+        own = set(assessment["photo_id"])
+        for r in sign_links[sign_links["status"].isin(["certain", "uncertain"])].to_dict("records"):
+            if r["photo_id"] not in own:
+                signs_by_way.setdefault(int(r["osm_way_id"]), []).append(r)
 
     attrs = ["speed", "surface"] + (["lit", "junction"] if stage == 2 else [])
     extract = layers.sources["osm"]["extract_date"]
@@ -324,8 +336,9 @@ def build_candidates(layers, assessment: pd.DataFrame, readings: pd.DataFrame | 
             if attr in ("lit", "junction") and not wphotos:
                 continue  # etap 2: tylko drogi połączone ze zdjęciem
             q = QUESTION_OF[attr]
+            aphotos = wphotos + signs_by_way.get(oid, []) if attr == "speed" else wphotos
             evid = []
-            for p in wphotos:
+            for p in aphotos:
                 r = rd.get((p["photo_id"], q))
                 if r is None:
                     evid.append(PhotoEvidence(p["photo_id"], p["status"], "model_unavailable", None, None))
@@ -376,9 +389,9 @@ def build_candidates(layers, assessment: pd.DataFrame, readings: pd.DataFrame | 
                 "overture_norm": "" if ov is None or ov.value is None else str(ov.value),
                 "osm_status": o.status,
                 "overture_status": "" if ov is None else ov.status,
-                "photo_ids": [p["photo_id"] for p in wphotos],
-                "link_status": [p["status"] for p in wphotos],
-                "link_details": [link_detail(p) for p in wphotos],
+                "photo_ids": [p["photo_id"] for p in aphotos],
+                "link_status": [p["status"] for p in aphotos],
+                "link_details": [link_detail(p) for p in aphotos],
                 "photo_reading": "; ".join(readings_txt) if readings_txt else "brak odczytu modelu",
                 "osm_timestamp": str(way["osm_timestamp"]),
                 "osm_extract_date": extract,

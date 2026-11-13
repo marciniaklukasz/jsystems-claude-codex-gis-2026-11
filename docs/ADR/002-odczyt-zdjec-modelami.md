@@ -75,6 +75,8 @@ Typ pytania: `choice`. Jedno pytanie w jednym żądaniu (PRD AC-19a). Wersja 1 o
 
 Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 
+**`questions_version = 2` (decyzja użytkownika 2026-11-13, po próbach v1):** pytanie `junction_visible` ograniczone do ok. 25 m przed aparatem (spójnie z promieniem mapy, ADR-001 §4.4); `speed_limit_value` — przy kilku znakach największy, znak przekreślony/zaklejony = `unreadable`. Opcje bez zmian. **Zasady próby v2, zapisane przed pierwszym żądaniem:** progi z `[evaluation]` bez zmian; ocena końcowa AC-23 wyłącznie na podziale `test` (pary `validation` służyły do obserwacji v1 i nie są podstawą oceny); wynik zapisany bez względu na to, czy przekroczy próg.
+
 ### 4.2. Żądanie Decisions
 - `model`: główny `typesafe/jev-1.14`, porównawczy `openai/gpt-6-luna-decisions` (ADR-000 D-04, zmiana 2026-11-12); wartości z `thresholds.toml` (`decision_model`, `comparison_model`).
 - `state`: tablica dokładnie dwóch części: tekst „Street-level photograph. Answer about what is visible.” i obraz jako data URL JPEG. Nic więcej (PRD AC-17): bez nazwy pliku, `photo_id`, etykiet, detekcji, atrybutów mapy, współrzędnych.

@@ -28,7 +28,7 @@ overture_paved = ["paved", "paving_stones", "metal"]
 overture_unpaved = ["unpaved", "gravel", "dirt"]
 
 [vision]
-questions_version = 1
+questions_version = 2
 decision_model = "typesafe/jev-1.14"
 comparison_model = "openai/gpt-6-luna-decisions"
 fallback_model = "openai/gpt-6-luna"
@@ -46,11 +46,11 @@ state_text = "Street-level photograph. Answer about what is visible."
 min_coverage = 0.3
 min_accuracy = 0.8
 
-# Pytania do modeli, questions_version = 1 (ADR-002 §4.1). Zmiana tekstu lub opcji → questions_version + 1.
+# Pytania do modeli, questions_version = 2 (ADR-002 §4.1; v2 2026-11-13: skrzyżowanie w otoczeniu aparatu, znak najbliższy). Zmiana tekstu lub opcji → questions_version + 1.
 # Neutralne teksty po angielsku: bez nazw miejsc, identyfikatorów i danych mapy (AC-17).
 [questions.speed_limit_value]
 stage = 1
-instructions = "Look for a round prohibitory speed-limit sign (red ring with a number in the middle) in the image. Which number does it show?"
+instructions = "Look for a round prohibitory speed-limit sign (red ring with a black number in the middle) in the image. If several are visible, answer for the largest one. A sign crossed out or covered with tape counts as unreadable. Which number does it show?"
 [questions.speed_limit_value.criteria]
 "5" = "The sign shows 5."
 "10" = "The sign shows 10."
@@ -89,7 +89,7 @@ unknown = "It cannot be decided from the image."
 
 [questions.junction_visible]
 stage = 2
-instructions = "Is a junction visible where another road for vehicles joins or splits from the road on which the camera stands? Pedestrian crossings and overpasses do not count."
+instructions = "Look only at the road surface close to the camera, roughly the first 25 meters ahead. Does another road for vehicles join or split from the road on which the camera stands within that distance? Distant junctions, driveways to single buildings, pedestrian crossings and overpasses do not count."
 [questions.junction_visible.criteria]
 yes = "A junction with another vehicle road is visible."
 no = "No such junction is visible."

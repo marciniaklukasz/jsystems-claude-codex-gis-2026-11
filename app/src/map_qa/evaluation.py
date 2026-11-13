@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from map_qa import config
+
 
 LABEL_COLUMNS = ["photo_id", "question_id", "label", "status", "sequence", "image_path", "expected_sha256", "author", "license", "source_url"]
 
@@ -37,7 +39,14 @@ def load_labels(data_dir: str | Path) -> pd.DataFrame:
 
     photos = _csv(root / "photos.csv").set_index("photo_id", drop=False)
     rows = list(speed_rows)
-    for row in _csv(root / "reference_labels.csv").to_dict("records"):
+    # etykiety skrzyżowania z definicją ~25 m (plik wersjonowany w app/config/reference, decyzja 2026-11-13)
+    override = (config.load_thresholds().get("evaluation") or {}).get("junction_labels")
+    reference = _csv(root / "reference_labels.csv").to_dict("records")
+    if override:
+        reference = [r for r in reference if r["question"] != "junction_visible"]
+        extra = pd.read_csv(config.APP_DIR / override, comment="#", dtype=str, keep_default_na=False, encoding="utf-8")
+        reference += extra.to_dict("records")
+    for row in reference:
         if row["question"] == "speed_limit_value":
             continue
         photo_id = row["photo_id"]

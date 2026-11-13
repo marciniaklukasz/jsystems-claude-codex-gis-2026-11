@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan implementacji"
+  short_description: "Plany z audytem i wiążącym podziałem pracy agentów"
+  default_prompt: "Użyj $create-implementation-plan, aby przygotować i poddać audytowi plan do mojej akceptacji przed realizacją."

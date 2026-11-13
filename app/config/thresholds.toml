@@ -45,6 +45,8 @@ state_text = "Street-level photograph. Answer about what is visible."
 # Progi akceptacji odczytu (AC-23), zapisane przed końcową próbą.
 min_coverage = 0.3
 min_accuracy = 0.8
+# Etykiety junction_visible z definicją ~25 m przed aparatem (zastępują te z reference_labels.csv; decyzja 2026-11-13)
+junction_labels = "config/reference/junction_visible_25m.csv"
 
 # Pytania do modeli, questions_version = 2 (ADR-002 §4.1; v2 2026-11-13: skrzyżowanie w otoczeniu aparatu, znak najbliższy). Zmiana tekstu lub opcji → questions_version + 1.
 # Neutralne teksty po angielsku: bez nazw miejsc, identyfikatorów i danych mapy (AC-17).

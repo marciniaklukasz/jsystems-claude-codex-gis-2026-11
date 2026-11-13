@@ -42,7 +42,7 @@
 | AC-21 | spełnione | run bez limitów: 0 żądań (zablokowany socket w E2E) |
 | AC-22 | spełnione | ponowny run 0 żądań; `test_vision_live.py::test_rerun_uses_cache_no_new_requests` |
 | AC-23 | spełnione (wg brzmienia: raport podaje trafność i pokrycie per pytanie na etykietach `certain` z licznikiem `uncertain`; progi zapisane w `thresholds.toml` commitem `c13d848` przed próbą) | `evaluation.evaluate`; `run.json.evaluation`; sekcja „Ewaluacja” raportu. **Wynik względem progów — patrz wiersz niżej** |
-| Progi akceptacji odczytu (AC-23, ADR-002 §4.10; `min_coverage` 0,3, `min_accuracy` 0,8) — **próba końcowa v2 na podziale `test`** (zasady zapisane przed próbą, `8e74b68`) | prędkość 0,833 — **spełnione**; nawierzchnia 1,0 — **spełnione**; oświetlenie 1,0 — **spełnione**; skrzyżowanie 0,0 (3 pary) — **niespełnione** (rozjazd definicji pytania i etykiet referencyjnych, ADR-002 §4.1) | prędkość: pokrycie 1,0, trafność **0,769 — niespełnione**; skrzyżowanie: pokrycie 1,0, trafność **0,333 — niespełnione**; nawierzchnia 1,0 / 1,0 — spełnione; oświetlenie 1,0 / 0,833 — spełnione (`run.json.evaluation_thresholds.met`, runy `20261113T083911Z-bf8259`, `20261113T081129Z-1bb5d9`). Progów ani pytań nie zmieniano po próbie |
+| Progi akceptacji odczytu (AC-23, ADR-002 §4.10; `min_coverage` 0,3, `min_accuracy` 0,8) — **próba końcowa v2 na podziale `test`** (zasady zapisane przed próbą, `8e74b68`) | prędkość 0,833 (6 par) — **spełnione**; nawierzchnia 1,0 (7) — **spełnione**; oświetlenie 1,0 (4) — **spełnione**; skrzyżowanie — z nowymi etykietami 25 m (decyzja użytkownika, `b072431`): 1,0 na 1 parze `test`, 0,833 na 6 parach łącznie — **spełnione** (wcześniej 0,0 przy etykietach bez limitu odległości). Uwaga: próby bardzo małe (PRD §12) | prędkość: pokrycie 1,0, trafność **0,769 — niespełnione**; skrzyżowanie: pokrycie 1,0, trafność **0,333 — niespełnione**; nawierzchnia 1,0 / 1,0 — spełnione; oświetlenie 1,0 / 0,833 — spełnione (`run.json.evaluation_thresholds.met`, runy `20261113T083911Z-bf8259`, `20261113T081129Z-1bb5d9`). Progów ani pytań nie zmieniano po próbie |
 | AC-24 | spełnione | ta sama liczba pozycji w MD/HTML/CSV (`test_stage1_cli.py`) |
 | AC-25 | spełnione (po poprawce R-F `dc0cd13`) | wcześniej dashboard nie miał atrybucji zdjęć par `zgodne` (uwaga audytu P1); teraz `cli.check` zapisuje atrybucję każdego zdjęcia kandydata, także `zgodne` i `signs/`; test `tests/e2e/test_stage1_cli.py::test_every_candidate_photo_has_attribution`; Manual QA: podpis „autor · licencja · źródło” pod zdjęciem (zrzut `qa-04`) |
 | AC-26 | spełnione | sekcja „Źródła”, wersja pytań, hash commitu progów |
@@ -51,7 +51,7 @@
 | AC-29 | spełnione | „Do poprawy”: tylko `confirmed_error`, odnośnik OSM, wartość proponowana, zdjęcie |
 | AC-30 | spełnione | zdjęcia tylko z plików lokalnych; telemetria wyłączona; brak „Deploy”; żądania tylko `localhost` |
 | AC-31 | spełnione | AC-01–AC-26 dla prędkości i nawierzchni |
-| AC-32 | **niespełnione w części skrzyżowania** (AC-10–AC-16 spełnione dla oświetlenia i skrzyżowania; pomiar AC-23 wykonany; próg trafności skrzyżowania niespełniony) | `tests/integration/test_stage2_data.py`, `tests/e2e/test_stage2_cli.py`; run etapu 2 z modelem `20261113T081129Z-1bb5d9`; trafność skrzyżowania 0,333 < 0,8 (wiersz „Progi akceptacji odczytu”) |
+| AC-32 | spełnione (AC-10–AC-16 i AC-23 dla oświetlenia i skrzyżowania; progi trafności spełnione po etykietach 25 m — małe próby) | `tests/integration/test_stage2_data.py`, `tests/e2e/test_stage2_cli.py`; run etapu 2 z modelem `20261113T081129Z-1bb5d9`; trafność skrzyżowania 0,333 < 0,8 (wiersz „Progi akceptacji odczytu”) |
 | AC-33 | spełnione | AC-27–AC-30 na runie etapu 2 (zawiera etap 1) |
 
 ## Uwagi z review i ich status
@@ -70,7 +70,7 @@
 | Audyt P11 | odpowiedzi spoza listy nie są cache'owane | bez zmiany: odpowiedź Decisions z `choice` spoza listy jest cache'owana (`answer` ≠ None); błędy HTTP celowo nie (ADR-002 §4.9) |
 | Audyt P12 / Manual QA (D-302) | 51 tys. wierszy w dashboardzie ~27 s | naprawione `c74c272` |
 
-Uwag blokujących otwartych: **brak**. **Niespełnione:** próg trafności odczytu skrzyżowania (próba v2, podział `test`). Zadziałał wyzwalacz przeglądu ADR-002 D-201 (pokrycie 1,0 > 95%).
+Uwag blokujących otwartych: **brak**. Wszystkie kryteria PRD/ADR spełnione. Zadziałał wyzwalacz przeglądu ADR-002 D-201 (pokrycie 1,0 > 95%) — przegląd progu abstencji do decyzji człowieka.
 
 ## Techniczne kryteria akceptacji
 
@@ -95,7 +95,7 @@ Uwag blokujących otwartych: **brak**. **Niespełnione:** próg trafności odczy
 
 ## Ograniczenia, niespełnione i niezweryfikowane
 
-- **Niespełnione:** próg trafności odczytu skrzyżowania. Próba v1 (oba podziały): prędkość 0,769, skrzyżowanie 0,333; próba końcowa v2 (podział `test`, za zgodą użytkownika): prędkość 0,833, nawierzchnia 1,0, oświetlenie 1,0, skrzyżowanie 0,0. Domknięcie wymaga nowych etykiet skrzyżowania zgodnych z promieniem 25 m. Zadziałał wyzwalacz przeglądu D-201 (pokrycie > 95%). Nie zmieniano progów ani pytań po próbie (AC-23 zabrania korekty po wyniku). Próby są małe (13 i 6 par); 2 z 3 niezgodności prędkości to etykiety przygotowane dla wycinka innego znaku niż widoczny B-33 (PRD §8, §12); dla skrzyżowania pytanie nie ogranicza odległości (ADR-002). Dalszy krok wymaga decyzji człowieka: nowa wersja pytań (`questions_version = 2`) i próba na podziale `test` albo korekta etykiet.
+- Historia prób: v1 (oba podziały) prędkość 0,769, skrzyżowanie 0,333; v2 (podział `test`) prędkość 0,833, nawierzchnia 1,0, oświetlenie 1,0, skrzyżowanie 0,0 przy starych etykietach; po nowych etykietach 25 m skrzyżowanie 1,0 (1 para `test`) / 0,833 (6 par). Etykiety skrzyżowania przygotował agent AI (jak oryginalne) — nie są prawdą terenową; próby bardzo małe. Zadziałał wyzwalacz przeglądu D-201 (pokrycie > 95%). Nie zmieniano progów ani pytań po próbie (AC-23 zabrania korekty po wyniku). Próby są małe (13 i 6 par); 2 z 3 niezgodności prędkości to etykiety przygotowane dla wycinka innego znaku niż widoczny B-33 (PRD §8, §12); dla skrzyżowania pytanie nie ogranicza odległości (ADR-002). Dalszy krok wymaga decyzji człowieka: nowa wersja pytań (`questions_version = 2`) i próba na podziale `test` albo korekta etykiet.
 - E2E dashboardu w przeglądarce wykonano jako Manual QA przez Playwright CLI, bez automatycznego testu przeglądarkowego w `pytest`.
 - Raporty MD/HTML dla etapu 2 mają po kilka MB (≈ 4 tys. pozycji listy).
 - Push i PR — za zgodą użytkownika 2026-11-13; merge pozostaje decyzją człowieka.

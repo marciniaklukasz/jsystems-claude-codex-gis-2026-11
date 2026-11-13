@@ -155,7 +155,7 @@ Wszystko z PRD §7, w tym edycja OSM, praca wielu użytkowników, trening modeli
 | R-F | ✅ | CS review + świeża sesja Claude + O | Codex: 2×P1, 3×P2; audyt: 5 istotnych, 8 drobnych — naprawione w `dc0cd13`, `c74c272`; próba etapu 2 z modelem (AC-23/AC-32) |
 | T9 | w toku | O | push i PR za zgodą użytkownika 2026-11-13 |
 
-**Koszt płatnych wywołań (przydział ≤ 1 USD):** capture T5.2b 0,00034 USD; E2E `live` ≈ 0,0005 USD; próba T6 0,006367 USD; próba etapu 2 0,0032 USD; próba v2 0,0091 USD; łącznie ≈ **0,0195 USD**.
+**Koszt płatnych wywołań (przydział ≤ 1 USD):** capture T5.2b 0,00034 USD; E2E `live` ≈ 0,0005 USD; próba T6 0,006367 USD; próba etapu 2 0,0032 USD; próba v2 0,0091 USD; próba z etykietami 25 m 0,00097 USD; łącznie ≈ **0,0205 USD**.
 
 **Eskalacje i odstępstwa:** `compare` i testy T1.2/T2.1/T3.1/T4.1/T5.3/T7.1/T8.2 napisał O zamiast H (kontrakty współdzielone; H nie respektował zakazu Git w smoke teście). Zadania OC (T4.3, T8.3) wykonał CL. Worker T5.4 (CS) wykrył 2 błędne oczekiwania w testach O (koszt BYOK, rezerwa) — poprawione testy, nie logika. Push na `origin` po milestone zablokowany przez klasyfikator uprawnień — użytkownik zgodził się 2026-11-13 na push i jeden PR (zamiast 4 PR stosowych; milestone'y są w jednej gałęzi). Playwright CLI zainstalowany za zgodą użytkownika (`npm install -g @playwright/cli@latest`).
 

@@ -17,7 +17,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from map_qa import cli, ingest
+from map_qa import cli, config, ingest
 
 SECRET_OR = "sk-or-test-SECRET-VALUE-123"
 SECRET_DB = "dapi-test-SECRET-VALUE-456"
@@ -77,7 +77,7 @@ def test_run_json_counts_and_limitations(run):  # AC-03, AC-05, AC-09
     assert lc["certain"] + lc["uncertain"] + lc["no_candidate"] == 561 and lc["no_candidate"] == 3
     srcs = {x["source"] for x in r["limitations"]}
     assert {"Databricks", "OpenRouter"} <= srcs
-    assert r["crs"] == "EPSG:2180" and r["questions_version"] == 1
+    assert r["crs"] == "EPSG:2180" and r["questions_version"] == config.load_thresholds()["vision"]["questions_version"]
     assert r["requests_total"] == 0 and r["cost_total_usd"] == 0
     assert r["thresholds_commit"]
 

@@ -125,7 +125,7 @@ def test_cache_second_run_no_requests(conn):  # AC-22, §8 „Cache”
 
 def test_cache_invalidated_by_questions_version(conn, monkeypatch):
     run(conn, manifest(1), FakeTransport([decision_body("paved", SURE)]), Limits(decision=1, max_cost_usd=1))
-    th2 = {**TH, "vision": {**TH["vision"], "questions_version": 2}}
+    th2 = {**TH, "vision": {**TH["vision"], "questions_version": TH["vision"]["questions_version"] + 1}}
     t = FakeTransport([decision_body("paved", SURE)])
     vision.run_cascade(conn, run_id="R2", manifest=manifest(1), images=images(1), links={}, limits=Limits(decision=1, max_cost_usd=1), th=th2, transport=t)
     assert len(t.calls) == 1

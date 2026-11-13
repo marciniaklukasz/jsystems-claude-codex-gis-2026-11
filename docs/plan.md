@@ -151,12 +151,13 @@ Wszystko z PRD §7, w tym edycja OSM, praca wielu użytkowników, trening modeli
 | 5 (T5.1–T5.6) | ✅ | O (`store`, testy vision, capture, integracja), CL (research SDK, `evaluation`), CS (`vision`) | `3fda90a`, `bfec839`, `353c042`, `a13e58e`, `f67a99c`, `7ef7693` |
 | 6 (T6) | ✅ | O | `70bcff2`; E2E `live` 4/4; próba 40 żądań, 0,006367 USD; drugi run 0 żądań |
 | 7 (T7.1–T7.3) | ✅ | O | `c26e6db`, `0cd26da`; logika etapu 2 powstała w T4.2 (testy T7 bez fazy Red) |
-| 8 (T8.1–T8.3) | ✅ kod, Manual QA w toku | O (testy, decyzja wizualna), CL (dashboard) | `52902d4`, `b73d1c8` |
-| 9 (R-F, T9) | w toku | — | — |
+| 8 (T8.1–T8.3) | ✅ | O (testy, decyzja wizualna, Manual QA), CL (dashboard) | `52902d4`, `b73d1c8`, `c74c272`; Playwright CLI: zrzuty obu zakładek, filtr „rozbieżne” = 27 jak w raporcie, zapis decyzji, restart serwera i trwałość, konsola 0 błędów, żądania tylko `localhost:8501` |
+| R-F | ✅ | CS review + świeża sesja Claude + O | Codex: 2×P1, 3×P2; audyt: 5 istotnych, 8 drobnych — naprawione w `dc0cd13`, `c74c272`; próba etapu 2 z modelem (AC-23/AC-32) |
+| T9 | w toku | O | push i PR za zgodą użytkownika 2026-11-13 |
 
-**Koszt płatnych wywołań (przydział ≤ 1 USD):** capture T5.2b 0,00034 USD; E2E `live` ≈ 0,0005 USD; próba T6 0,006367 USD; łącznie ≈ **0,0072 USD**.
+**Koszt płatnych wywołań (przydział ≤ 1 USD):** capture T5.2b 0,00034 USD; E2E `live` ≈ 0,0005 USD; próba T6 0,006367 USD; próba etapu 2 0,0032 USD; łącznie ≈ **0,0104 USD**.
 
-**Eskalacje i odstępstwa:** `compare` i testy T1.2/T2.1/T3.1/T4.1/T5.3/T7.1/T8.2 napisał O zamiast H (kontrakty współdzielone; H nie respektował zakazu Git w smoke teście). Zadania OC (T4.3, T8.3) wykonał CL. Worker T5.4 (CS) wykrył 2 błędne oczekiwania w testach O (koszt BYOK, rezerwa) — poprawione testy, nie logika. Push na `origin` po milestone zablokowany przez klasyfikator uprawnień — wymaga decyzji człowieka.
+**Eskalacje i odstępstwa:** `compare` i testy T1.2/T2.1/T3.1/T4.1/T5.3/T7.1/T8.2 napisał O zamiast H (kontrakty współdzielone; H nie respektował zakazu Git w smoke teście). Zadania OC (T4.3, T8.3) wykonał CL. Worker T5.4 (CS) wykrył 2 błędne oczekiwania w testach O (koszt BYOK, rezerwa) — poprawione testy, nie logika. Push na `origin` po milestone zablokowany przez klasyfikator uprawnień — użytkownik zgodził się 2026-11-13 na push i jeden PR (zamiast 4 PR stosowych; milestone'y są w jednej gałęzi). Playwright CLI zainstalowany za zgodą użytkownika (`npm install -g @playwright/cli@latest`).
 
 ## Pierwsza czynność
 ~~Krok 0c~~ — wykonany 2026-11-12. Następna czynność: T0.1 z planu orkiestracji.

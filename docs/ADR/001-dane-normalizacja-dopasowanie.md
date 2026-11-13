@@ -85,6 +85,8 @@ Zakres par:
 - „Poniżej `tertiary` para tylko przy porównywalnym dowodzie” obejmuje także przypadki z przyczyną (nieporównywalna wartość OSM lub Overture, `ambiguous_link`, `abstain`, `model_unavailable`): bez porównywalnego dowodu → wykluczenie „brak porównywalnego dowodu” z licznikiem. Dla `tertiary`+ obowiązują kroki 1–5 (AC-12, AC-07). Etap 2 (`lit`, skrzyżowanie) nie ma ograniczenia klasy — pary tylko dla dróg połączonych ze zdjęciem.
 - Odczyt prędkości `none` (brak znaku B-33) i oświetlenia `no` (brak lampy) nie tworzą dowodu; `unreadable` i `unknown` → `abstain`.
 - Oświetlenie: widoczna lampa przy `lit=no` → `do sprawdzenia` z `not_comparable` („lampa nie dowodzi działania instalacji”); przy braku `lit` → `missing`.
+- Skrzyżowanie na mapie = węzeł o stopniu ≥ 3 w grafie dróg (koniec drogi liczy się 1, węzeł wewnętrzny 2); węzeł łączący tylko dwie drogi końcami (podział jednej ulicy na dwie drogi OSM) nie jest skrzyżowaniem (review R-F, 2026-11-13).
+- Zdjęcia `signs/` z połączeniem `certain`/`uncertain` są dowodem dla pary prędkości (bez wpływu na liczniki AC-09 i na pary etapu 2); `evaluation_only` nie trafia do porównania (review R-F).
 - Skrzyżowanie: każde zdjęcie drogi porównywane z mapą w swoim punkcie rzutu; wyniki zdjęć łączone kolejnością `rozbieżne` > `zgodne` > kolejka > wykluczenie (`compare.combine_results`).
 - Kandydat ma `link_details` (dystans i różnica kierunku przeliczone w EPSG:2180, przyczyny, flagi informacyjne `camera_against_way_direction`, `boundary_crossing`) — §3.4 krok 5 (review R-A).
 - Wynik na pełnych danych etapu 1: 434 pewne / 124 niepewne / 3 bez kandydata; 0% `link_*_mismatch` (D-101), 0% `restricted_access` (D-103); `not_comparable` 14,3% par prędkości (D-102 < 40%).

@@ -1,5 +1,7 @@
 # Plan implementacji całej aplikacji map-qa (orkiestracja agentów)
 
+> **Wykonanie: ZREALIZOWANY 2026-11-13** — status kroków w [docs/plan.md](../plan.md#status-wykonania-2026-11-12-plan-orkiestracji), zgodność z PRD/ADR w [map-qa-final-review.md](map-qa-final-review.md).
+>
 > **Status: ZAAKCEPTOWANY 2026-11-12** — wykonanie autoryzowane przez użytkownika jako cel „zaimplementuj cały plan”. Decyzje: G-DESIGN → domyślny motyw Streamlit; G-PUB → push na `origin` po każdym milestone; PR na każdy milestone (A–D). G-PAID → przydział prowadzącego ≤ 1 USD na modele aplikacji (T5.2b capture, T6 E2E na prawdziwym API); mocki tylko w unit/integration i tylko z capture. Merge PR pozostaje decyzją człowieka.
 >
 > **Poprawki po audycie spójności 2026-11-12 (P1–P7):** macierz §5 (T0.2, T1.1–T1.3, T3.x, T4.x, R-A, T5.2, T5.4, T7.x z nowym T7.3, T8.2, R-F), §3 (review względem `63974fe`, kontrola Git dla H), §6–§8. Decyzje P1–P7 zapisane w PRD i ADR-000…004 (zmiany z datą 2026-11-12).

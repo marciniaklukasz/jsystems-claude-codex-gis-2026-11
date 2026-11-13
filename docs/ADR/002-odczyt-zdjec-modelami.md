@@ -138,6 +138,8 @@ Zmiana tekstu lub opcji → `questions_version + 1` (unieważnia cache, AC-22).
 - Raport zawiera liczbę wykluczonych etykiet `uncertain` (AC-23) i liczbę odczytów rozstrzygniętych przez każdy stopień (AC-20e).
 - Model porównawczy: pokrycie i trafność liczone tylko na parach, które faktycznie dostał; ponowny run z cache odtwarza jego odczyty bez żądań (2026-11-12).
 - **Próba 2026-11-12 (T6):** limity 25/5/10, 40 żądań, 0 błędów, 0,006367 USD; ponowny run 0 żądań. Prędkość: pokrycie 1,0, trafność 0,769 (próg 0,8 niespełniony; 2 z 3 niezgodności to etykiety z wycinka znaku innego niż B-33, a na pełnym kadrze widać inny znak B-33 — ryzyko z PRD §12); nawierzchnia: pokrycie 1,0, trafność 1,0. Progi nie zostały zmienione po próbie (AC-23).
+- **Próba etapu 2 (2026-11-13):** `--stage 2`, limity 25/5/10: 25 nowych żądań (reszta z cache), 0 błędów, 0,0032 USD. Oświetlenie: pokrycie 1,0, trafność 0,833 (próg spełniony); skrzyżowanie: pokrycie 1,0, trafność 0,333 (próg niespełniony; 6 par — bez wniosków o modelach, PRD §12). Ryzyko: pytanie `junction_visible` nie ogranicza odległości, a mapa jest sprawdzana w promieniu 25 m — model odpowiada „yes” dla odległego odgałęzienia (Manual QA `panoramax_c92cd930…`). Rozważyć `questions_version = 2` z ograniczeniem do najbliższego otoczenia aparatu.
+- Zdjęcie próbki jest odrzucane, gdy SHA-256 pliku różni się od manifestu (`photos.csv`/`signs.csv`, kolumna `sha256`); pominięte pary są licznikiem wykluczeń „próbka modelu: …” (review R-F).
 - Progi akceptacji zapisane w `thresholds.toml` i zatwierdzone commitem przed runem z przydziałem; raport zapisuje hash commitu pliku progów.
 
 ---

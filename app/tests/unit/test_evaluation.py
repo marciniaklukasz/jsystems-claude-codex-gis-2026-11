@@ -77,3 +77,14 @@ def test_comparison_pairs_only_those_sent_to_comparison_model():  # ADR-002 §4.
     rows = ev_mod.evaluate(readings, labels, comparison)["surface"]["rows"]
     cmp_all = next(r for r in rows if r["who"] == "comparison" and r["split"] == "all")
     assert (cmp_all["pairs"], cmp_all["certain"], cmp_all["coverage"]) == (1, 1, 1.0)
+
+
+def test_junction_labels_from_25m_reference_file(data_dir):  # decyzja użytkownika 2026-11-13 (ADR-002 §4.1 v2)
+    from map_qa import evaluation as ev_mod
+
+    lab = ev_mod.load_labels(data_dir)
+    j = lab[lab["question_id"] == "junction_visible"]
+    assert len(j) == 36
+    assert (j["status"] == "certain").sum() == 19 and (j[j["status"] == "certain"]["label"] == "yes").sum() == 3
+    assert j["image_path"].notna().all() and j["expected_sha256"].str.len().eq(64).all()
+    assert lab[lab["question_id"] == "surface"]["status"].eq("certain").sum() == 99  # pozostałe pytania bez zmian

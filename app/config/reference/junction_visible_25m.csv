@@ -1,0 +1,39 @@
+# Etykiety junction_visible z definicją ~25 m przed aparatem (ADR-002 §4.1 v2). Decyzja użytkownika 2026-11-13.
+# Metoda: wizualna ocena 36 lokalnych zdjęć offline/ (wszystkie z etykietą junction_visible w reference_labels.csv), w losowej kolejności, bez etykiet v1, odczytów modelu i danych mapy. Panoramy bez jednoznacznego przodu -> uncertain.
+photo_id,question,label,status,method,reviewer,reviewed_at,note
+mapillary_1003606477244774,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"street-name sign suggests a side street on the right, distance (~25-40 m) unclear"
+mapillary_134880168567523,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,road through woods; pedestrian crossing only
+mapillary_1703614410947032,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"rural road, no side road near the camera"
+mapillary_1970607046823232,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,residential street; only house driveways near the camera
+mapillary_300710294864519,junction_visible,yes,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,side road on the left with a turning lane within about 20 m
+mapillary_318023379678504,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"road with turning lane; the side road is far ahead, beyond 25 m"
+mapillary_898575118512804,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,right side opens to a petrol-station access; unclear whether a road or a driveway
+panoramax_06d0eb23-792f-4b03-b183-60f57ee6bc9a,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,road with roadworks; only a driveway near the camera
+panoramax_08ee15b1-7c28-47c7-b529-474bc6a74ac2,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway curving, no road joining or splitting near the camera"
+panoramax_0a6b4cd8-442c-42d5-b6fc-8ad81b0ad600,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"branches visible ahead, likely beyond 25 m; distance unclear"
+panoramax_0c05d025-f885-4006-8b93-c36481eb46f2,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama between carriageways; forward direction ambiguous
+panoramax_0f839710-50b6-48b4-8afe-7e6ae20da27a,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"entrance to a car park, not clearly a vehicle road junction"
+panoramax_30f08d1e-fe31-42d9-b042-607f5237d9ff,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,car park surface; not clearly a road for vehicles
+panoramax_334a574d-18cb-4c2e-be3f-f99307e080d9,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway, no road joining or splitting"
+panoramax_352fefea-0b33-4a8b-909b-022d2b6765ae,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway; exit-lane arrow near the camera, the actual split is further ahead"
+panoramax_3b09b20d-4040-4781-a3ff-050ec4c90c14,junction_visible,yes,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama at a street corner with a cross street next to the camera
+panoramax_53f20456-b9a7-4c82-9205-071ac0ed899a,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway curving, no road joining or splitting"
+panoramax_646ecfdd-ab57-4a28-b411-fb112ced3c97,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway, no road joining or splitting"
+panoramax_6900cc09-be0d-4161-90e2-b8d309e59817,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,car park; not clearly a road for vehicles
+panoramax_707ebe2f-8e75-4fb7-b8e2-b61f1f7b6549,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama without an unambiguous forward direction
+panoramax_81d99ce7-e7b1-47ef-8864-f74e5762e4a2,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,motorway; overpass ahead does not count
+panoramax_8b83f403-bc61-43e5-a6fa-78dd40c1a74c,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway, no road joining or splitting"
+panoramax_92b83193-b23d-40a6-adb2-11175f808ca5,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,access on the right to a car-service site; unclear whether a road or a driveway
+panoramax_9bc04785-ce54-4104-8114-bc3b7155f6e9,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"rural road, no side road near the camera"
+panoramax_9db8522f-1672-4006-8bed-5011c969cc62,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway; dashed lane lines diverging on the right, start of an exit lane - distance to the split unclear"
+panoramax_b35a913d-cbc1-48d5-95bb-140a77cc2f1f,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway, no road joining or splitting near the camera"
+panoramax_c92cd930-6e04-4785-96f8-0230bf9b4ddf,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,multi-lane road; a branch is visible only far ahead (well beyond 25 m)
+panoramax_cb254d2d-fe9c-41d5-b8e2-a09e869bef3b,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama; not clear whether the camera stands at a junction
+panoramax_da295a3f-f89a-4cbf-a21c-c3e6fec287c4,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama without an unambiguous forward direction
+panoramax_df4d3a9c-5fb6-427f-8c54-293ed6ea354b,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"narrow forest road, no side road"
+panoramax_e08ac081-80d3-4556-bec2-561389f616f4,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama without an unambiguous forward direction
+panoramax_e11fea4d-5500-4c69-a60f-4a463e9e8b6f,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway; lane arrows for a diverge, the split itself is further ahead"
+panoramax_ebb50ed6-3cb1-488c-b907-dc233aae92bc,junction_visible,yes,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama at a fork: two streets diverge at the camera position
+panoramax_f0339c3f-3c1d-400f-bbcc-33d755a23899,junction_visible,no,certain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,"motorway carriageway, no road joining or splitting"
+panoramax_f76890b6-63a5-4ced-8884-8a89d6edac72,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,branch road on the right starting around 20-30 m ahead; distance at the 25 m limit
+panoramax_f92eb564-ce87-4cac-8381-802d2d646234,junction_visible,unknown,uncertain,visual_inspection_25m,Claude Opus 5.5 (agent AI),2026-11-13,360 panorama at a building corner; forward direction ambiguous

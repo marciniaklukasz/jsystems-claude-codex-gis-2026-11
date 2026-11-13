@@ -152,3 +152,26 @@ def test_switching_back_prefills_saved_decision(env):
     at.selectbox(key="selected").set_value("c1").run()
     at.selectbox(key="selected").set_value("c2").run()
     assert at.radio(key="decision").value == "niepewne" and at.text_area(key="comment").value == "do weryfikacji"
+
+
+def test_polish_placeholders_and_queue_first(env):  # Manual QA 2026-11-13: polski UI, kolejność jak w raporcie
+    at = new_app(*env)
+    assert all(m.placeholder == "Wybierz…" for m in at.multiselect)
+    first = at.dataframe[0].value.iloc[0]["kategoria"]
+    assert first == "rozbieżne"
+
+
+def test_table_capped_with_polish_notice(tmp_path, monkeypatch):  # ADR-003 D-302: 51 tys. wierszy renderowało się ~10 s
+    from test_dashboard_logic import _cand
+    runs = tmp_path / "runs"
+    cands = [_cand(i, "speed", "zgodne") for i in range(30)] + [_cand(100 + i, "speed", "rozbieżne") for i in range(3)]
+    make_run(runs, cands=cands)
+    at = AppTest.from_file(str(APP), default_timeout=60)
+    at.session_state["runs_dir"] = str(runs)
+    at.session_state["db_path"] = str(tmp_path / "t.db")
+    at.session_state["_max_table_rows"] = 10
+    at.run()
+    assert "Liczba pozycji: 33" in texts(at)
+    table = at.dataframe[0].value
+    assert len(table) == 10 and (table["kategoria"].iloc[:3] == "rozbieżne").all()
+    assert "Tabela pokazuje 10 pierwszych z 33 pozycji" in texts(at)

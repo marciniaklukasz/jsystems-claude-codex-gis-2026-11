@@ -57,16 +57,24 @@ def filter_candidates(df, attributes=None, categories=None, stages=None, reasons
 
 
 def review_table(df, decisions: dict) -> pd.DataFrame:
-    rows = []
-    for r in df.to_dict("records"):
-        d = decisions.get(r["candidate_key"], {})
-        rows.append({"kategoria": r["category"], "atrybut": ATTRIBUTE_LABEL.get(r["attribute"], r["attribute"]),
-                     "etap": STAGE_OF[r["attribute"]], "OSM id": r["osm_id"], "nazwa": r.get("name", ""),
-                     "OSM": r.get("osm_norm", ""), "Overture": r.get("overture_norm", ""),
-                     "przyczyny": ", ".join(r.get("reasons") or []),
-                     "decyzja": store.DECISION_LABEL.get(d.get("decision"), ""), "autor": d.get("author", ""),
-                     "czas": d.get("decided_at", ""), "candidate_id": r["candidate_id"]})
-    return pd.DataFrame(rows, columns=["kategoria", "atrybut", "etap", "OSM id", "nazwa", "OSM", "Overture", "przyczyny", "decyzja", "autor", "czas", "candidate_id"])
+    """Tabela przeglądu (wektorowo — 50 tys. wierszy etapu 2 w < 1 s; ADR-003 D-302)."""
+    keys = df["candidate_key"]
+    dec = keys.map(lambda k: decisions.get(k, {}))
+    out = pd.DataFrame({
+        "kategoria": df["category"].values,
+        "atrybut": df["attribute"].map(lambda a: ATTRIBUTE_LABEL.get(a, a)).values,
+        "etap": df["attribute"].map(STAGE_OF).values,
+        "OSM id": df["osm_id"].values,
+        "nazwa": (df["name"] if "name" in df else pd.Series([""] * len(df))).fillna("").values,
+        "OSM": (df["osm_norm"] if "osm_norm" in df else pd.Series([""] * len(df))).fillna("").values,
+        "Overture": (df["overture_norm"] if "overture_norm" in df else pd.Series([""] * len(df))).fillna("").values,
+        "przyczyny": df["reasons"].map(lambda r: ", ".join(r) if r is not None and len(r) else "").values,
+        "decyzja": dec.map(lambda d: store.DECISION_LABEL.get(d.get("decision"), "")).values,
+        "autor": dec.map(lambda d: d.get("author", "")).values,
+        "czas": dec.map(lambda d: d.get("decided_at", "")).values,
+        "candidate_id": df["candidate_id"].values,
+    })
+    return out
 
 
 def photo_bytes(path) -> bytes | None:
@@ -105,7 +113,9 @@ def candidate_detail(row, data: RunData) -> dict:
 
 
 def to_fix(data: RunData, confirmed: list[dict]) -> pd.DataFrame:
-    indexed = {r["candidate_key"]: r for r in data.candidates.to_dict("records")}
+    keys = {d["candidate_key"] for d in confirmed}
+    sub = data.candidates[data.candidates["candidate_key"].isin(keys)]  # tylko potwierdzone (wydajność, D-302)
+    indexed = {r["candidate_key"]: r for r in sub.to_dict("records")}
     rows = []
     for d in confirmed:
         key = d["candidate_key"]
@@ -125,7 +135,9 @@ def to_fix(data: RunData, confirmed: list[dict]) -> pd.DataFrame:
 
 def to_fix_photos(data: RunData, confirmed: list[dict]) -> list[dict]:
     """Zdjęcia potwierdzonych przypadków: bajty tylko z plików lokalnych (AC-30) i podpis atrybucji (AC-25)."""
-    indexed = {r["candidate_key"]: r for r in data.candidates.to_dict("records")}
+    keys = {d["candidate_key"] for d in confirmed}
+    sub = data.candidates[data.candidates["candidate_key"].isin(keys)]  # tylko potwierdzone (wydajność, D-302)
+    indexed = {r["candidate_key"]: r for r in sub.to_dict("records")}
     out = []
     for d in confirmed:
         r = indexed.get(d["candidate_key"])

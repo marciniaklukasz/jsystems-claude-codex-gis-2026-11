@@ -123,3 +123,9 @@ def test_to_fix_photos_local_only(tmp_path):  # R-F (Codex P2): zdjęcie w zakł
     assert len(items) == 1 and items[0]["photo_id"] == "p1"
     assert items[0]["image_bytes"] is None and items[0]["caption"] == "czecko · CC-BY-SA-4.0 · https://panoramax.example/p1"
     assert "104" in items[0]["label"]
+
+
+def test_streamlit_config_hides_deploy_toolbar():  # AC-30: brak akcji wysyłających do usług zewnętrznych
+    import tomllib
+    cfg = tomllib.loads((Path(__file__).resolve().parents[2] / ".streamlit" / "config.toml").read_text(encoding="utf-8"))
+    assert cfg["client"]["toolbarMode"] == "viewer" and cfg["browser"]["gatherUsageStats"] is False

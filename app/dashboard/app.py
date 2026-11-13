@@ -26,8 +26,13 @@ run_dir = dd.latest_run(runs_dir)
 if run_dir is None:
     st.info("Brak wyników kontroli — uruchom kontrolę z wiersza poleceń")
     st.stop()
+@st.cache_data(show_spinner=False)
+def _load(path: str, mtime: float):
+    return dd.load_run(Path(path))
+
+
 with st.spinner("Wczytywanie wyników…"):
-    data = dd.load_run(run_dir)
+    data = _load(str(run_dir), (Path(run_dir) / "candidates.parquet").stat().st_mtime)
 st.caption(f'Run {data.run.get("run_id", run_dir.name)} · etap {data.run.get("stage", "") } · {data.run.get("created_at", "")}')
 conn = store.connect(db_path)
 decisions = store.get_decisions(conn)
@@ -37,12 +42,19 @@ with overview:
     cats = ["zgodne", "rozbieżne", "do sprawdzenia"]
     reasons = sorted({x for xs in data.candidates.reasons for x in (xs or [])})
     c1, c2, c3, c4 = st.columns(4)
-    with c1: f_attr = st.multiselect("Atrybut", attrs, format_func=lambda x: ATTRIBUTE_LABEL.get(x, x), key="f_attr")
-    with c2: f_cat = st.multiselect("Kategoria", cats, key="f_cat")
-    with c3: f_stage = st.multiselect("Etap", ["1", "2"], key="f_stage")
-    with c4: f_reason = st.multiselect("Przyczyna", reasons, format_func=lambda x: REASON_TEXT.get(x, x), key="f_reason")
+    with c1: f_attr = st.multiselect("Atrybut", attrs, format_func=lambda x: ATTRIBUTE_LABEL.get(x, x), key="f_attr", placeholder="Wybierz…")
+    with c2: f_cat = st.multiselect("Kategoria", cats, key="f_cat", placeholder="Wybierz…")
+    with c3: f_stage = st.multiselect("Etap", ["1", "2"], key="f_stage", placeholder="Wybierz…")
+    with c4: f_reason = st.multiselect("Przyczyna", reasons, format_func=lambda x: REASON_TEXT.get(x, x), key="f_reason", placeholder="Wybierz…")
     filtered = dd.filter_candidates(data.candidates, f_attr, f_cat, f_stage, f_reason)
+    order = {"rozbieżne": 0, "do sprawdzenia": 1, "zgodne": 2}  # jak w raporcie (ADR-003 §3.1)
+    filtered = filtered.sort_values(["category", "attribute", "osm_id"], key=lambda c: c.map(order) if c.name == "category" else c, kind="stable").reset_index(drop=True)
     st.markdown(f"Liczba pozycji: {len(filtered)}")
+    # tabela: najwyżej N pierwszych pozycji (kolejka najpierw); render 51 tys. wierszy trwał ~10 s (ADR-003 D-302)
+    max_rows = int(st.session_state.get("_max_table_rows", 2000))
+    if len(filtered) > max_rows:
+        st.caption(f"Tabela pokazuje {max_rows} pierwszych z {len(filtered)} pozycji — zawęź filtry, aby zobaczyć pozostałe.")
+        filtered = filtered.head(max_rows)
     table = dd.review_table(filtered, decisions)
     event = st.dataframe(table, on_select="rerun", selection_mode="single-row", key="table", hide_index=True)
     ids = filtered.candidate_id.tolist()
@@ -51,10 +63,19 @@ with overview:
     if rows and rows[0] < len(ids) and st.session_state.get("_table_pick") != ids[rows[0]]:
         st.session_state["_table_pick"] = ids[rows[0]]
         st.session_state["selected"] = ids[rows[0]]
-    if st.session_state.get("selected") not in ids:
+    id_set = set(ids)
+    if st.session_state.get("selected") not in id_set:
         st.session_state["selected"] = ids[0] if ids else None
-    labels = dict(zip(filtered.candidate_id, filtered.osm_id.astype(str) + " · " + filtered.attribute.map(lambda a: ATTRIBUTE_LABEL.get(a, a)) + " · " + filtered.category))
-    chosen = st.selectbox("Wybierz kandydata", options=ids, key="selected", format_func=lambda cid: f"{cid} · {labels.get(cid, '')}")
+    # lista wyboru: pierwsze 500 pozycji po filtrze + zaznaczona w tabeli (51 tys. opcji blokowało UI, ADR-003 D-302)
+    MAX_OPTIONS = 500
+    options = ids[:MAX_OPTIONS]
+    if st.session_state.get("selected") and st.session_state["selected"] not in options:
+        options = options + [st.session_state["selected"]]
+    sub = filtered[filtered.candidate_id.isin(options)]
+    labels = dict(zip(sub.candidate_id, sub.osm_id.astype(str) + " · " + sub.attribute.map(lambda a: ATTRIBUTE_LABEL.get(a, a)) + " · " + sub.category))
+    chosen = st.selectbox("Wybierz kandydata", options=options, key="selected", format_func=lambda cid: f"{cid} · {labels.get(cid, '')}")
+    if len(ids) > MAX_OPTIONS:
+        st.caption(f"Lista wyboru pokazuje {MAX_OPTIONS} pierwszych z {len(ids)} pozycji — zaznacz wiersz w tabeli albo zawęź filtry.")
     if chosen:
         row = filtered[filtered.candidate_id == chosen].iloc[0]
         detail = dd.candidate_detail(row, data)
